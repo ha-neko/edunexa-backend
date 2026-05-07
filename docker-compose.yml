@@ -1,0 +1,53 @@
+services:
+  # App
+  edurexa-app:
+    build:
+      context: .
+      dockerfile: php/Dockerfile
+    container_name: edurexa-app
+    restart: unless-stopped
+    working_dir: /var/www/html/edurexa
+    volumes:
+      - .:/var/www/html
+    networks:
+      - edurexa-network
+
+  # Server
+  edurexa-nginx:
+    image: nginx:alpine
+    container_name: edurexa-nginx
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    volumes:
+      - .:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - edurexa-app
+    networks:
+      - edurexa-network
+
+  # Database
+  edurexa-mysql:
+    image: mysql:8.0
+    container_name: edurexa-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: edurexa_db
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - "3307:3306"
+    networks:
+      - edurexa-network
+
+  # Cache
+  edurexa-redis:
+    image: redis:alpine
+    container_name: edurexa-redis
+    restart: unless-stopped
+    networks:
+      - edurexa-network
+
+networks:
+  edurexa-network:
+    driver: bridge

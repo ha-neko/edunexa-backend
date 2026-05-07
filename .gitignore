@@ -1,0 +1,17 @@
+# Docker & OS
+.DS_Store
+.idea
+*.log
+
+# Laravel
+edurexa/.env
+edurexa/vendor/
+edurexa/node_modules/
+edurexa/storage/framework/cache/data/*
+edurexa/storage/framework/sessions/*
+edurexa/storage/framework/views/*.php
+edurexa/storage/logs/*.log
+edurexa/public/storage
+
+# Database data (Opsional)
+# Jika kamu ingin database tetap kosong saat di-push, abaikan folder data mysql jika ada
