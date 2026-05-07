@@ -1,6 +1,6 @@
-# Edurexa Backend Setup Guide
+# Edunexa Backend Setup Guide
 
-Repository ini berisi infrastruktur Docker (Nginx, MySQL, Redis) dan aplikasi Laravel 13 untuk project **Edurexa**.
+Repository ini berisi infrastruktur Docker (Nginx, MySQL, Redis) dan aplikasi Laravel 13 untuk project **Edunexa**.
 
 ## 🛠 Prasyarat (Windows)
 Sebelum memulai, pastikan tim sudah menginstal:
@@ -17,14 +17,14 @@ Ikuti langkah-langkah berikut secara berurutan:
 ### 1. Clone Repository
 Buka PowerShell atau Terminal di Windows, lalu jalankan:
 ```bash
-git clone git@github.com:ha-neko/edurexa-backend.git
-cd edurexa-backend
+git clone git@github.com:ha-neko/edunexa-backend.git
+cd edunexa-backend
 ```
 
 ### 2. Persiapkan Environment File
 Salin file template environment untuk Laravel:
 ```bash
-cp edurexa/.env.example edurexa/.env
+cp edunexa/.env.example edunexa/.env
 ```
 
 ### 3. Jalankan Docker Containers
@@ -38,13 +38,13 @@ docker-compose up -d --build
 Jalankan perintah ini untuk menginstal library PHP dan mengamankan aplikasi:
 ```bash
 # Install composer packages
-docker exec -it edurexa-app composer install
+docker exec -it edunexa-app composer install
 
 # Generate Laravel Application Key
-docker exec -it edurexa-app php artisan key:generate
+docker exec -it edunexa-app php artisan key:generate
 
 # Jalankan migrasi database
-docker exec -it edurexa-app php artisan migrate
+docker exec -it edunexa-app php artisan migrate
 ```
 
 ---
@@ -59,9 +59,9 @@ Setelah setup selesai, kamu bisa mengakses:
 
 ## 💡 Tips Pengembangan
 - **Perintah Artisan**: Selalu jalankan melalui docker, contoh:  
-  `docker exec -it edurexa-app php artisan make:controller NamaController`
+  `docker exec -it edunexa-app php artisan make:controller NamaController`
 - **Permission Error**: Jika muncul error "Permission Denied" di folder storage, jalankan:  
-  `docker exec -it edurexa-app chmod -R 777 storage bootstrap/cache`
+  `docker exec -it edunexa-app chmod -R 777 storage bootstrap/cache`
 - **Update Config**: Jika kamu mengubah file di folder `nginx/`, jangan lupa restart container:  
-  `docker restart edurexa-nginx`
+  `docker restart edunexa-nginx`
 

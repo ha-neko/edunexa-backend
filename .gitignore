@@ -4,14 +4,14 @@
 *.log
 
 # Laravel
-edurexa/.env
-edurexa/vendor/
-edurexa/node_modules/
-edurexa/storage/framework/cache/data/*
-edurexa/storage/framework/sessions/*
-edurexa/storage/framework/views/*.php
-edurexa/storage/logs/*.log
-edurexa/public/storage
+edunexa/.env
+edunexa/vendor/
+edunexa/node_modules/
+edunexa/storage/framework/cache/data/*
+edunexa/storage/framework/sessions/*
+edunexa/storage/framework/views/*.php
+edunexa/storage/logs/*.log
+edunexa/public/storage
 
 # Database data (Opsional)
 # Jika kamu ingin database tetap kosong saat di-push, abaikan folder data mysql jika ada
