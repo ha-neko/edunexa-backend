@@ -52,7 +52,6 @@ docker exec -it edunexa-app php artisan migrate
 ## 🔗 Akses Aplikasi
 Setelah setup selesai, kamu bisa mengakses:
 - **Web App**: [http://localhost:8081](http://localhost:8081)
-- **Portainer (Docker Management)**: [http://localhost:9000](http://localhost:9000)
 - **Database**: localhost:3306 (User: `root`, Pass: `password`)
 
 ---
