@@ -2,24 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+// INI YANG PENTING:
+use Spatie\LaravelSettings\SettingsMigrator; 
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
+ public function run(): void
+{
+    $this->call(RoleSeeder::class);
 
-    /**
-     * Seed the application's database.
-     */
-    public function run(): void
-    {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-    }
+    // Langsung tembak ke tabel settings
+    \Illuminate\Support\Facades\DB::table('settings')->insertOrIgnore([
+        ['group' => 'app', 'name' => 'app_name', 'payload' => json_encode('Bayn'), 'created_at' => now(), 'updated_at' => now()],
+        ['group' => 'app', 'name' => 'app_version', 'payload' => json_encode('1.0.0'), 'created_at' => now(), 'updated_at' => now()],
+        ['group' => 'app', 'name' => 'app_description', 'payload' => json_encode('Food Ordering System'), 'created_at' => now(), 'updated_at' => now()],
+    ]);
+}
 }
