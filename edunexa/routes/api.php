@@ -48,25 +48,34 @@ Route::prefix('customer')->group(function () {
 // =====================
 Route::prefix('pegawai')->group(function () {
 
-    // Public
+    // Public (Bisa diakses tanpa login)
     Route::prefix('auth')->group(function () {
-        Route::post('/login',                 [Pegawai\AuthController::class, 'login']);
-        Route::post('/verify-pin',            [Pegawai\AuthController::class, 'verifyPin']);
-        Route::post('/verify-pin/resend',     [Pegawai\AuthController::class, 'resendPin']);
-        Route::post('/forgot-password',       [Pegawai\PasswordResetController::class, 'forgotPassword']);
-        Route::post('/forgot-password/verify',[Pegawai\PasswordResetController::class, 'verifyOtp']);
-        Route::post('/forgot-password/resend',[Pegawai\PasswordResetController::class, 'resendOtp']);
-        Route::post('/forgot-password/reset', [Pegawai\PasswordResetController::class, 'resetPassword']);
+        Route::post('/login',                  [Pegawai\AuthController::class, 'login']);
+        Route::post('/verify-pin',             [Pegawai\AuthController::class, 'verifyPin']);
+        Route::post('/verify-pin/resend',      [Pegawai\AuthController::class, 'resendPin']);
+        Route::post('/forgot-password',        [Pegawai\PasswordResetController::class, 'forgotPassword']);
+        Route::post('/forgot-password/verify', [Pegawai\PasswordResetController::class, 'verifyOtp']);
+        Route::post('/forgot-password/resend', [Pegawai\PasswordResetController::class, 'resendOtp']);
+        Route::post('/forgot-password/reset',  [Pegawai\PasswordResetController::class, 'resetPassword']);
     });
 
-    // Protected
+    // Protected (Wajib Login/Pakai Token)
     Route::middleware(['auth:api', 'active', 'log.ip'])->group(function () {
+        
+        // --- FITUR ABSENSI SEPTIAN ---
+        Route::prefix('attendance')->group(function () {
+            Route::post('/in',      [\App\Http\Controllers\AttendanceController::class, 'store']);   // Untuk Absen Masuk
+            Route::get('/history',  [\App\Http\Controllers\AttendanceController::class, 'index']);   // Untuk Liat Riwayat
+        });
+
+        // Auth Pegawai
         Route::prefix('auth')->group(function () {
             Route::get('/me',      [Pegawai\AuthController::class, 'me']);
             Route::post('/logout', [Pegawai\AuthController::class, 'logout']);
-            Route::post('/refresh',[Pegawai\AuthController::class, 'refresh']);
+            Route::post('/refresh', [Pegawai\AuthController::class, 'refresh']);
         });
 
+        // Profile Pegawai
         Route::prefix('user')->group(function () {
             Route::post('/profile',         [Pegawai\ProfileController::class, 'update']);
             Route::post('/profile-photo',   [Pegawai\ProfileController::class, 'updatePhoto']);
