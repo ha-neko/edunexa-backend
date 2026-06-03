@@ -19,6 +19,12 @@ use App\Http\Controllers\Api\Guardian\ProfileController as GuardianProfileContro
 use App\Http\Controllers\Api\Guardian\StudentController as GuardianStudentController;
 use App\Http\Controllers\Api\Guardian\AttendanceController as GuardianAttendanceController;
 use App\Http\Controllers\Api\ProfilePhotoController;
+
+// QR Attendance additions controllers
+use App\Http\Controllers\Api\Admin\ShiftController;
+use App\Http\Controllers\Api\Admin\ClassroomShiftScheduleController;
+use App\Http\Controllers\Api\QrScanController;
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,20 +32,24 @@ use Illuminate\Support\Facades\Route;
 | API Routes — Sistem Absensi SMK CS
 |--------------------------------------------------------------------------
 |
-| Prefix  : /api
-| Auth    : JWT via guard 'api'
-| Roles   : admin | guru | siswa | guardian
+| Prefix   : /api
+| Auth     : JWT via guard 'api'
+| Roles    : admin | guru | siswa | guardian
 |
 */
 
+// ── PUBLIC SCANNER ENDPOINTS (No Student Auth Required) ─────────────────
+Route::prefix('attendance')->group(function () {
+    Route::get ('scan/student-info', [QrScanController::class, 'studentInfo']); // Preview before scanning
+    Route::post('scan',              [QrScanController::class, 'scan']);        // Clock in / out logging
+});
+
 // ── Role-Specific Auth Routes ──────────────────────────────────────────
-// Loop ini mendaftarkan endpoint auth untuk masing-masing role:
-// e.g., POST api/admin/auth/login, POST api/siswa/auth/login, dll.
 $roles = ['admin', 'guru', 'siswa', 'guardian'];
 
 foreach ($roles as $role) {
     Route::prefix($role . '/auth')->group(function () {
-        
+
         // Public login
         Route::post('login', [AuthController::class, 'login']);
 
@@ -50,7 +60,7 @@ foreach ($roles as $role) {
             Route::post('logout',          [AuthController::class, 'logout']);
             Route::put ('change-password', [AuthController::class, 'changePassword']);
         });
-        
+
     });
 }
 
@@ -92,6 +102,17 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan
         Route::get('reports/attendance', [AdminReportController::class, 'attendance']);
+
+        // ── NEW: Shift Management ──
+        Route::apiResource('shifts', ShiftController::class);
+
+        // ── NEW: Class Shift Schedules ──
+        Route::get   ('classrooms/{classroom}/shift-schedule',            [ClassroomShiftScheduleController::class, 'index']);
+        Route::post  ('classrooms/{classroom}/shift-schedule',            [ClassroomShiftScheduleController::class, 'store']);
+        Route::delete('classrooms/{classroom}/shift-schedule/{schedule}', [ClassroomShiftScheduleController::class, 'destroy']);
+
+        // ── NEW: Student QR Management ──
+        Route::post('students/{student}/regenerate-qr', [QrScanController::class, 'regenerateQr']);
     });
 
     // ── GURU ──────────────────────────────────────────────────────────────
