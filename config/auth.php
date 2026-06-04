@@ -42,6 +42,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+         // ← TAMBAHKAN INI
+    'api' => [
+        'driver'   => 'jwt',
+        'provider' => 'users',
+    ],
     ],
 
     /*

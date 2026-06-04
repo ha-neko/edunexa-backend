@@ -33,12 +33,17 @@ class AuthController extends Controller
 
     // ── GET /api/auth/me ──────────────────────────────────────────────────
 
-    public function me(): JsonResponse
-    {
-        $user = auth('api')->user()->load($this->profileRelation());
+   public function me(): JsonResponse
+{
+    $user     = auth('api')->user();
+    $relation = $this->profileRelation();
 
-        return response()->json(['data' => new UserResource($user)]);
+    if ($relation) {
+        $user->load($relation);
     }
+
+    return response()->json(['data' => new UserResource($user)]);
+}
 
     // ── POST /api/auth/refresh ────────────────────────────────────────────
 
@@ -76,17 +81,22 @@ class AuthController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private function respondWithToken(string $token): JsonResponse
-    {
-        $user = auth('api')->user()->load($this->profileRelation());
+   private function respondWithToken(string $token): JsonResponse
+{
+    $user     = auth('api')->user();
+    $relation = $this->profileRelation();
 
-        return response()->json([
-            'access_token' => $token,
-            'token_type'   => 'bearer',
-            'expires_in'   => auth('api')->factory()->getTTL() * 60,
-            'data'         => new UserResource($user),
-        ]);
+    if ($relation) {
+        $user->load($relation);
     }
+
+    return response()->json([
+        'access_token' => $token,
+        'token_type'   => 'bearer',
+        'expires_in'   => auth('api')->factory()->getTTL() * 60,
+        'data'         => new UserResource($user),
+    ]);
+}
 
     private function profileRelation(): ?string
     {

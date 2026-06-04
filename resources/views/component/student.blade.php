@@ -286,30 +286,81 @@
 
 <!-- MODAL QR CODE -->
 <div class="modal fade" id="barcodeModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content border-0 text-center">
+    <div class="modal-dialog" style="max-width:480px;">
+        <div class="modal-content border-0" style="border-radius:16px; overflow:hidden;">
 
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-qrcode mr-2" style="color:#4f8ef7"></i>
-                    QR Code Siswa
-                </h5>
-                <button type="button" class="close text-light" data-dismiss="modal">
+            <!-- HEADER -->
+            <div style="background:#2563eb; padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-qrcode" style="color:#fff; font-size:18px;"></i>
+                    <span style="font-size:15px; font-weight:500; color:#fff;">QR Code Siswa</span>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" style="color:rgba(255,255,255,0.7); opacity:1;">
                     <span>&times;</span>
                 </button>
             </div>
 
-            <div class="modal-body">
-                <p class="mb-2" id="qrStudentName" style="color:#fff; font-weight:600;"></p>
-                <img id="qrImage" src="" alt="QR Code" style="width:100%; border-radius:12px;">
-                <p class="mt-3 mb-0" style="color:#94a3b8; font-size:12px;" id="qrCode"></p>
-            </div>
+            <div class="modal-body" style="padding:1.5rem; background:#0f172a;">
 
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-outline-light btn-sm" data-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-primary btn-sm" id="regenerateQrBtn">
-                    <i class="fas fa-sync mr-1"></i>Regenerate QR
-                </button>
+                <!-- AVATAR + INFO -->
+                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem;">
+                    <div id="qrAvatar" style="width:52px; height:52px; border-radius:50%; background:#1e3a8a; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:500; color:#93c5fd; flex-shrink:0;"></div>
+                    <div style="text-align:left;">
+                        <p id="qrStudentName" style="font-size:15px; font-weight:500; color:#f1f5f9; margin:0 0 2px;"></p>
+                        <p id="qrStudentNis"  style="font-size:13px; color:#64748b; margin:0;"></p>
+                    </div>
+                </div>
+
+                <!-- QR + TOKEN side by side di layar lebar, stack di mobile -->
+                <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem; align-items:flex-start;">
+
+                    <!-- QR IMAGE -->
+                    <div style="flex:0 0 auto; background:#fff; border:0.5px solid #e2e8f0; border-radius:12px; padding:0.75rem; display:inline-flex;">
+                        <img id="qrImage" src="" alt="QR Code" style="display:block; width:160px; height:160px;">
+                    </div>
+
+                    <!-- TOKEN + KETERANGAN -->
+                    <div style="flex:1; min-width:160px; display:flex; flex-direction:column; gap:10px;">
+
+                        <div style="background:#1e293b; border-radius:8px; padding:10px 12px;">
+                            <p style="font-size:11px; color:#64748b; margin:0 0 6px;">Token QR</p>
+                            <span id="qrTokenDisplay" style="font-size:11px; font-family:monospace; color:#94a3b8; word-break:break-all; display:block;"></span>
+                        </div>
+
+                        <button onclick="copyToken()" style="width:100%; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px; border-radius:8px; border:1px solid #334155; background:transparent; color:#cbd5e1; font-size:13px; cursor:pointer;">
+                            <i class="fas fa-copy" style="font-size:12px;"></i>
+                            Salin Token
+                        </button>
+
+                        <div style="background:#1e293b; border-radius:8px; padding:10px 12px;">
+                            <p style="font-size:11px; color:#64748b; margin:0 0 4px;">Info</p>
+                            <p style="font-size:11px; color:#94a3b8; margin:0;">QR dapat digunakan kapan saja selama tidak di-regenerate.</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ACTIONS -->
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+
+                    <button onclick="downloadQr()" style="flex:1; min-width:100px; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px; border-radius:10px; border:1px solid #334155; background:transparent; color:#cbd5e1; font-size:13px; cursor:pointer;">
+                        <i class="fas fa-download" style="font-size:13px;"></i>
+                        Download
+                    </button>
+
+                    <button onclick="printQr()" style="flex:1; min-width:100px; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px; border-radius:10px; border:1px solid #334155; background:transparent; color:#cbd5e1; font-size:13px; cursor:pointer;">
+                        <i class="fas fa-print" style="font-size:13px;"></i>
+                        Print
+                    </button>
+
+                    <button id="regenerateQrBtn" style="flex:1; min-width:100px; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px; border-radius:10px; border:1px solid #ef4444; background:transparent; color:#ef4444; font-size:13px; cursor:pointer;">
+                        <i class="fas fa-sync" style="font-size:13px;"></i>
+                        Regenerate
+                    </button>
+
+                </div>
+
             </div>
 
         </div>
@@ -745,18 +796,36 @@ document.getElementById('updateStudentBtn').addEventListener('click', async () =
    QR CODE
 ══════════════════════════════════════════ */
 
+let currentQrToken = '';
+let currentQrStudentId = '';
+
 async function showBarcode(id) {
     try {
         const res     = await axios.get(`${STUDENT_URL}/${id}`, axiosConfig);
         const student = res.data.data;
-        const name    = student.user?.name ?? 'Siswa';
-        const qr      = student.qr_code   ?? '';
 
+        const name    = student.user?.name  ?? 'Siswa';
+        const nis     = student.nis         ?? '-';
+        const token   = student.qr_token    ?? '';
+
+        currentQrToken     = token;
+        currentQrStudentId = id;
+
+        // Avatar inisial
+        const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('qrAvatar').innerText      = initials;
         document.getElementById('qrStudentName').innerText = name;
-        document.getElementById('qrCode').innerText        = qr;
-        document.getElementById('qrImage').src             =
-            `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qr)}`;
+        document.getElementById('qrStudentNis').innerText  = `NIS: ${nis}`;
 
+        // Token display (potong)
+        document.getElementById('qrTokenDisplay').innerText =
+            token.length > 30 ? token.substring(0, 30) + '...' : token;
+
+        // QR Image
+        document.getElementById('qrImage').src =
+            `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(token)}`;
+
+        // Regenerate button
         document.getElementById('regenerateQrBtn').onclick = () => regenerateQr(id);
 
         $('#barcodeModal').modal('show');
@@ -767,8 +836,64 @@ async function showBarcode(id) {
     }
 }
 
+/* ── COPY TOKEN ── */
+function copyToken() {
+    navigator.clipboard.writeText(currentQrToken).then(() => {
+        alert('Token berhasil disalin!');
+    });
+}
+
+/* ── DOWNLOAD QR ── */
+function downloadQr() {
+    const name = document.getElementById('qrStudentName').innerText;
+    const nis  = document.getElementById('qrStudentNis').innerText.replace('NIS: ', '');
+    const url  = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(currentQrToken)}`;
+
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `QR_${name}_${nis}.png`;
+    a.target   = '_blank';
+    a.click();
+}
+
+/* ── PRINT QR ── */
+function printQr() {
+    const name  = document.getElementById('qrStudentName').innerText;
+    const nis   = document.getElementById('qrStudentNis').innerText;
+    const url   = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentQrToken)}`;
+
+    const win   = window.open('', '_blank');
+    win.document.write(`
+        <html>
+        <head>
+            <title>QR Code - ${name}</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 40px; }
+                img  { display: block; margin: 20px auto; }
+                h2   { margin: 0 0 8px; }
+                p    { color: #64748b; margin: 0; }
+            </style>
+        </head>
+        <body>
+            <h2>${name}</h2>
+            <p>${nis}</p>
+            <img src="${url}" width="300" height="300">
+            <p style="margin-top:16px; font-size:12px; font-family:monospace;">${currentQrToken}</p>
+        </body>
+        </html>
+    `);
+    win.document.close();
+    win.print();
+}
+
+/* ── REGENERATE QR ── */
 async function regenerateQr(id) {
     if (!confirm('Regenerate QR Code? QR lama tidak bisa digunakan lagi.')) return;
+
+    const btn = document.getElementById('regenerateQrBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled  = true;
+
     try {
         const res = await axios.post(
             `${BASE_URL}/students/${id}/regenerate-qr`,
@@ -780,9 +905,11 @@ async function regenerateQr(id) {
         getStudents();
     } catch(e) {
         alert(e.response?.data?.message ?? 'Gagal regenerate QR.');
+    } finally {
+        btn.innerHTML = '<i class="fas fa-sync"></i> Regenerate';
+        btn.disabled  = false;
     }
 }
-
 /* ══════════════════════════════════════════
    DOWNLOAD EXCEL
 ══════════════════════════════════════════ */

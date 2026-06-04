@@ -144,7 +144,6 @@
 </div>
 
 <!-- AXIOS -->
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <!-- LOGIN SCRIPT -->
 <!-- AXIOS -->
@@ -224,7 +223,7 @@ const userRole    = response.data.data?.roles?.[0] ?? 'admin'; // pakai spatie r
 
         // 3. REDIRECT BERDASARKAN ROLE
         if(userRole === 'guru'){
-            window.location.href = '{{ route("guru") }}';
+           window.location.href = '{{ route("guru.home") }}';
         } else {
             window.location.href = '{{ route("admin.home") }}';
         }

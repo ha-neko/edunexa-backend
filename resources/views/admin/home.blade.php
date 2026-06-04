@@ -3,453 +3,192 @@
 
 @section('content')
 
-<!-- AXIOS -->
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <div class="container-fluid">
 
     <!-- HEADER -->
     <div class="dashboard-header mb-4">
-
         <div>
-
-            <h1 class="dashboard-title">
-                Dashboard Admin
-            </h1>
-            <h4>V2.1.0</h4>
-
-            <p class="dashboard-subtitle">
-                Selamat datang kembali di sistem EDUNEXA Absensi
-            </p>
-
+            <h1 class="dashboard-title">Dashboard Admin</h1>
+            <p class="dashboard-subtitle">Selamat datang kembali di sistem EDUNEXA Absensi</p>
         </div>
-
         <div class="dashboard-date">
-
             <i class="fas fa-calendar-alt mr-2"></i>
-
             <span id="todayDate"></span>
-
         </div>
-
     </div>
 
     <!-- HERO -->
     <div class="hero-banner mb-4">
-
         <div class="hero-content">
-
             <div>
-
-                <h2>
-                    Monitoring Sistem Absensi
-                </h2>
-
-                <p>
-                    Kelola data siswa, kelas,
-                    jurusan, dan aktivitas absensi
-                    secara realtime.
-                </p>
-
-                <a
-                    href="/scanabsen"
-                    class="btn btn-primary hero-btn"
-                >
-
-                    <i class="fas fa-qrcode mr-2"></i>
-                    Mulai Scan Absensi
-
+                <h2>Monitoring Sistem Absensi</h2>
+                <p>Kelola data siswa, kelas, jurusan, dan aktivitas absensi secara realtime.</p>
+                <a href="{{ route('admin.scanner') }}" class="btn btn-primary hero-btn">
+                    <i class="fas fa-qrcode mr-2"></i>Mulai Scan Absensi
                 </a>
-
             </div>
-
             <div class="hero-icon">
                 <i class="fas fa-fingerprint"></i>
             </div>
-
         </div>
-
     </div>
 
     <!-- STATISTIC -->
     <div class="row">
 
-        <!-- TOTAL SISWA -->
         <div class="col-xl-3 col-md-6 mb-4">
-
-            <div
-                class="dashboard-card blue dashboard-link"
-                onclick="goToPage('/mastersiswa')"
-            >
-
+            <div class="dashboard-card blue dashboard-link" onclick="window.location.href='{{ route('admin.master-siswa') }}'">
                 <div>
-
-                    <div class="card-label">
-                        Total Siswa
+                    <div class="card-label">Total Siswa</div>
+                    <div class="card-value" id="totalStudents">
+                        <i class="fas fa-spinner fa-spin"></i>
                     </div>
-
-                    <div
-                        class="card-value"
-                        id="totalStudents"
-                    >
-                        0
-                    </div>
-
                     <div class="card-growth">
-
-                        <i class="fas fa-arrow-up"></i>
-                        Klik untuk lihat siswa
-
+                        <i class="fas fa-arrow-up"></i> Klik untuk lihat siswa
                     </div>
-
                 </div>
-
-                <div class="card-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-
+                <div class="card-icon"><i class="fas fa-users"></i></div>
             </div>
-
         </div>
 
-        <!-- TOTAL KELAS -->
         <div class="col-xl-3 col-md-6 mb-4">
-
-            <div
-                class="dashboard-card green dashboard-link"
-                onclick="goToPage('/masterkelas')"
-            >
-
+            <div class="dashboard-card green dashboard-link" onclick="window.location.href='{{ route('admin.master-kelas') }}'">
                 <div>
-
-                    <div class="card-label">
-                        Total Kelas
+                    <div class="card-label">Total Kelas</div>
+                    <div class="card-value" id="totalClasses">
+                        <i class="fas fa-spinner fa-spin"></i>
                     </div>
-
-                    <div
-                        class="card-value"
-                        id="totalClasses"
-                    >
-                        0
-                    </div>
-
                     <div class="card-growth">
-
-                        <i class="fas fa-school"></i>
-                        Klik untuk lihat kelas
-
+                        <i class="fas fa-school"></i> Klik untuk lihat kelas
                     </div>
-
                 </div>
-
-                <div class="card-icon">
-                    <i class="fas fa-school"></i>
-                </div>
-
+                <div class="card-icon"><i class="fas fa-school"></i></div>
             </div>
-
         </div>
 
-        <!-- TOTAL JURUSAN -->
         <div class="col-xl-3 col-md-6 mb-4">
-
-            <div
-                class="dashboard-card orange dashboard-link"
-                onclick="goToPage('/masterjurusan')"
-            >
-
+            <div class="dashboard-card orange dashboard-link" onclick="window.location.href='{{ route('admin.master-jurusan') }}'">
                 <div>
-
-                    <div class="card-label">
-                        Total Jurusan
+                    <div class="card-label">Total Jurusan</div>
+                    <div class="card-value" id="totalMajors">
+                        <i class="fas fa-spinner fa-spin"></i>
                     </div>
-
-                    <div
-                        class="card-value"
-                        id="totalMajors"
-                    >
-                        0
-                    </div>
-
                     <div class="card-growth">
-
-                        <i class="fas fa-layer-group"></i>
-                        Klik untuk lihat jurusan
-
+                        <i class="fas fa-layer-group"></i> Klik untuk lihat jurusan
                     </div>
-
                 </div>
-
-                <div class="card-icon">
-                    <i class="fas fa-layer-group"></i>
-                </div>
-
+                <div class="card-icon"><i class="fas fa-layer-group"></i></div>
             </div>
-
         </div>
 
-        <!-- ABSENSI -->
         <div class="col-xl-3 col-md-6 mb-4">
-
-            <div
-                class="dashboard-card purple dashboard-link"
-                onclick="goToPage('/scanabsen')"
-            >
-
+            <div class="dashboard-card purple dashboard-link" onclick="window.location.href='{{ route('admin.scanner') }}'">
                 <div>
-
-                    <div class="card-label">
-                        Absensi Hari Ini
+                    <div class="card-label">Absensi Hari Ini</div>
+                    <div class="card-value" id="todayAttendance">
+                        <i class="fas fa-spinner fa-spin"></i>
                     </div>
-
-                    <div
-                        class="card-value"
-                        id="todayAttendance"
-                    >
-                        0
-                    </div>
-
                     <div class="card-growth">
-
-                        <i class="fas fa-check-circle"></i>
-                        Klik untuk scan absensi
-
+                        <i class="fas fa-check-circle"></i> Klik untuk scan absensi
                     </div>
-
                 </div>
-
-                <div class="card-icon">
-                    <i class="fas fa-qrcode"></i>
-                </div>
-
+                <div class="card-icon"><i class="fas fa-qrcode"></i></div>
             </div>
-
         </div>
 
     </div>
 
-    <!-- CONTENT -->
+    <!-- CONTENT ROW -->
     <div class="row">
 
         <!-- QUICK ACTION -->
         <div class="col-lg-7 mb-4">
-
             <div class="modern-card">
-
-                <div class="modern-card-header">
-
-                    <h5>
-                        Quick Action
-                    </h5>
-
-                </div>
-
+                <div class="modern-card-header"><h5>Quick Action</h5></div>
                 <div class="modern-card-body">
-
                     <div class="action-grid">
 
-                        <!-- SISWA -->
-                        <a
-                            href="/mastersiswa"
-                            class="action-item"
-                        >
-
-                            <div class="action-icon blue">
-
-                                <i class="fas fa-user-graduate"></i>
-
-                            </div>
-
-                            <div>
-
-                                <h6>
-                                    Data Siswa
-                                </h6>
-
-                                <p>
-                                    Kelola seluruh siswa
-                                </p>
-
-                            </div>
-
+                        <a href="{{ route('admin.master-siswa') }}" class="action-item">
+                            <div class="action-icon blue"><i class="fas fa-user-graduate"></i></div>
+                            <div><h6>Data Siswa</h6><p>Kelola seluruh siswa</p></div>
                         </a>
 
-                        <!-- KELAS -->
-                        <a
-                            href="/masterkelas"
-                            class="action-item"
-                        >
-
-                            <div class="action-icon green">
-
-                                <i class="fas fa-school"></i>
-
-                            </div>
-
-                            <div>
-
-                                <h6>
-                                    Master Kelas
-                                </h6>
-
-                                <p>
-                                    Management data kelas
-                                </p>
-
-                            </div>
-
+                        <a href="{{ route('admin.master-kelas') }}" class="action-item">
+                            <div class="action-icon green"><i class="fas fa-school"></i></div>
+                            <div><h6>Master Kelas</h6><p>Management data kelas</p></div>
                         </a>
 
-                        <!-- JURUSAN -->
-                        <a
-                            href="/masterjurusan"
-                            class="action-item"
-                        >
-
-                            <div class="action-icon orange">
-
-                                <i class="fas fa-layer-group"></i>
-
-                            </div>
-
-                            <div>
-
-                                <h6>
-                                    Master Jurusan
-                                </h6>
-
-                                <p>
-                                    Management data jurusan
-                                </p>
-
-                            </div>
-
+                        <a href="{{ route('admin.master-jurusan') }}" class="action-item">
+                            <div class="action-icon orange"><i class="fas fa-layer-group"></i></div>
+                            <div><h6>Master Jurusan</h6><p>Management data jurusan</p></div>
                         </a>
 
-                        <!-- SCANNER -->
-                        <a
-                            href="/scanabsen"
-                            class="action-item"
-                        >
+                        <a href="{{ route('admin.scanner') }}" class="action-item">
+                            <div class="action-icon purple"><i class="fas fa-qrcode"></i></div>
+                            <div><h6>Scanner QR</h6><p>Scan absensi siswa</p></div>
+                        </a>
 
-                            <div class="action-icon purple">
+                        <a href="{{ route('admin.master-guru') }}" class="action-item">
+                            <div class="action-icon blue"><i class="fas fa-chalkboard-teacher"></i></div>
+                            <div><h6>Data Guru</h6><p>Kelola seluruh guru</p></div>
+                        </a>
 
-                                <i class="fas fa-qrcode"></i>
-
-                            </div>
-
-                            <div>
-
-                                <h6>
-                                    Scanner QR
-                                </h6>
-
-                                <p>
-                                    Scan absensi siswa
-                                </p>
-
-                            </div>
-
+                        <a href="{{ route('admin.master-user') }}" class="action-item">
+                            <div class="action-icon green"><i class="fas fa-users-cog"></i></div>
+                            <div><h6>Master User</h6><p>Kelola akun pengguna</p></div>
                         </a>
 
                     </div>
-
                 </div>
-
             </div>
-
         </div>
 
-        <!-- SYSTEM STATUS -->
+        <!-- SYSTEM STATUS + ACTIVITY -->
         <div class="col-lg-5 mb-4">
 
-            <div class="modern-card">
-
-                <div class="modern-card-header">
-
-                    <h5>
-                        System Status
-                    </h5>
-
-                </div>
-
+            <!-- SYSTEM STATUS -->
+            <div class="modern-card mb-4">
+                <div class="modern-card-header"><h5>System Status</h5></div>
                 <div class="modern-card-body">
 
                     <div class="status-item">
-
-                        <span>
-                            Server Status
-                        </span>
-
-                        <span class="badge badge-success">
-                            Online
-                        </span>
-
+                        <span>Server Status</span>
+                        <span class="badge badge-success">Online</span>
                     </div>
 
                     <div class="status-item">
-
-                        <span>
-                            Database
-                        </span>
-
-                        <span class="badge badge-primary">
-                            Connected
-                        </span>
-
+                        <span>Database</span>
+                        <span class="badge badge-primary">Connected</span>
                     </div>
 
                     <div class="status-item">
-
-                        <span>
-                            QR Scanner
-                        </span>
-
-                        <span class="badge badge-info">
-                            Ready
-                        </span>
-
+                        <span>QR Scanner</span>
+                        <span class="badge badge-info">Ready</span>
                     </div>
 
                     <div class="status-item">
+                        <span>API Endpoint</span>
+                        <span class="badge badge-success" id="apiStatus">Checking...</span>
+                    </div>
 
-                        <span>
-                            API Endpoint
-                        </span>
-
-                        <span
-                            class="badge badge-success"
-                            id="apiStatus"
-                        >
-                            Connected
-                        </span>
-
+                    <div class="status-item">
+                        <span>Login Sebagai</span>
+                        <span class="badge badge-warning" id="loginAs">-</span>
                     </div>
 
                 </div>
-
             </div>
 
             <!-- RECENT ACTIVITY -->
-            <div class="modern-card mt-4">
-
-                <div class="modern-card-header">
-
-                    <h5>
-                        Aktivitas Terbaru
-                    </h5>
-
+            <div class="modern-card">
+                <div class="modern-card-header"><h5>Aktivitas Terbaru</h5></div>
+                <div class="modern-card-body" id="recentActivity">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-spinner fa-spin"></i> Memuat...
+                    </div>
                 </div>
-
-                <div
-                    class="modern-card-body"
-                    id="recentActivity"
-                >
-
-                    <!-- AUTO RENDER -->
-
-                </div>
-
             </div>
 
         </div>
@@ -459,331 +198,112 @@
 </div>
 
 <style>
-
-.dashboard-link{
-
-    cursor:pointer;
-    transition:0.3s;
-}
-
-.dashboard-link:hover{
-
-    transform:translateY(-5px);
-    opacity:0.95;
-}
-
-.activity-item{
-
-    display:flex;
-    align-items:flex-start;
-    margin-bottom:18px;
-}
-
-.activity-dot{
-
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    background:#4e73df;
-    margin-right:12px;
-    margin-top:6px;
-}
-
+.dashboard-link { cursor:pointer; transition:0.3s; }
+.dashboard-link:hover { transform:translateY(-5px); opacity:0.95; }
+.activity-item { display:flex; align-items:flex-start; margin-bottom:18px; }
+.activity-dot { width:12px; height:12px; border-radius:50%; background:#4e73df; margin-right:12px; margin-top:6px; flex-shrink:0; }
 </style>
 
 <script>
 
-/* =========================================
-   CONFIG
-========================================= */
+const API_BASE    = '{{ rtrim(config("app.url"), "/") }}/api';
+const token       = '{{ session("token") }}';
+const axiosConfig = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
 
-const API_BASE =
-'http://10.6.160.79:8081/api';
+// DATE
+document.getElementById('todayDate').innerHTML =
+    new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
 
-const token =
-localStorage.getItem('token');
+// LOGIN AS
+document.getElementById('loginAs').innerHTML = '{{ session("role") ?? "admin" }}';
 
-/* =========================================
-   DATE
-========================================= */
+/* ── DASHBOARD ── */
+async function loadDashboard() {
+    try {
 
-const today =
-new Date().toLocaleDateString(
-'id-ID',
-{
-    day:'2-digit',
-    month:'long',
-    year:'numeric'
-});
+        const [studentRes, classRes, majorRes] = await Promise.all([
+            axios.get(`${API_BASE}/admin/students?per_page=100`,   axiosConfig),
+            axios.get(`${API_BASE}/admin/classrooms?per_page=100`, axiosConfig),
+            axios.get(`${API_BASE}/admin/majors?per_page=100`,     axiosConfig),
+        ]);
 
-document.getElementById(
-'todayDate'
-).innerHTML = today;
+        const students = studentRes.data.data ?? [];
+        const classes  = classRes.data.data   ?? [];
+        const majors   = majorRes.data.data   ?? [];
 
-/* =========================================
-   REDIRECT
-========================================= */
+        document.getElementById('totalStudents').innerHTML  = students.length;
+        document.getElementById('totalClasses').innerHTML   = classes.length;
+        document.getElementById('totalMajors').innerHTML    = majors.length;
 
-function goToPage(url){
-
-    window.location.href = url;
-
-}
-
-/* =========================================
-   DASHBOARD DATA
-========================================= */
-
-async function loadDashboard(){
-
-    try{
-
-        const headers = {
-
-            Authorization:
-            `Bearer ${token}`,
-
-            Accept:
-            'application/json'
-        };
-
-        /* =========================
-           STUDENTS
-        ========================= */
-
-        const studentRes =
-        await axios.get(
-
-            `${API_BASE}/admin/students`,
-            { headers }
-
-        );
-
-        const students =
-        studentRes.data.data ?? [];
-
-        /* =========================
-           CLASSES
-        ========================= */
-
-        const classRes =
-        await axios.get(
-
-            `${API_BASE}/admin/classrooms`,
-            { headers }
-
-        );
-
-        const classes =
-        classRes.data.data ?? [];
-
-        /* =========================
-           MAJORS
-        ========================= */
-
-        const majorRes =
-        await axios.get(
-
-            `${API_BASE}/admin/majors`,
-            { headers }
-
-        );
-
-        const majors =
-        majorRes.data.data ?? [];
-
-        /* =========================
-           ATTENDANCE
-        ========================= */
-
-        let attendance = [];
-
-        try{
-
-            const attendanceRes =
-            await axios.get(
-
-                `${API_BASE}/admin/attendance/today`,
-                { headers }
-
-            );
-
-            attendance =
-            attendanceRes.data.data ?? [];
-
-        }catch(err){
-
-            console.log(
-                'Endpoint attendance tidak tersedia'
-            );
-
+        // Attendance
+        try {
+            const attendanceRes = await axios.get(`${API_BASE}/admin/attendances`, axiosConfig);
+            document.getElementById('todayAttendance').innerHTML = attendanceRes.data.data?.length ?? 0;
+        } catch(e) {
+            document.getElementById('todayAttendance').innerHTML = '0';
         }
 
-        /* =========================
-           TOTAL DATA
-        ========================= */
+        // API Status
+        document.getElementById('apiStatus').className   = 'badge badge-success';
+        document.getElementById('apiStatus').innerHTML   = 'Connected';
 
-        document.getElementById(
-            'totalStudents'
-        ).innerHTML =
-        students.length;
+        renderActivity(students, classes, majors);
 
-        document.getElementById(
-            'totalClasses'
-        ).innerHTML =
-        classes.length;
+    } catch(error) {
+        console.error(error);
+        ['totalStudents','totalClasses','totalMajors','todayAttendance'].forEach(id => {
+            document.getElementById(id).innerHTML = '-';
+        });
+        document.getElementById('apiStatus').className = 'badge badge-danger';
+        document.getElementById('apiStatus').innerHTML = 'Disconnected';
+        document.getElementById('recentActivity').innerHTML =
+            '<p class="text-muted text-center">Gagal memuat data.</p>';
+    }
+}
 
-        document.getElementById(
-            'totalMajors'
-        ).innerHTML =
-        majors.length;
+/* ── ACTIVITY ── */
+function renderActivity(students, classes, majors) {
+    const el = document.getElementById('recentActivity');
+    el.innerHTML = '';
 
-        document.getElementById(
-            'todayAttendance'
-        ).innerHTML =
-        attendance.length;
-
-        /* =========================
-           ACTIVITY
-        ========================= */
-
-        renderActivity(
-            students,
-            classes,
-            majors
-        );
-
-    }catch(error){
-
-        console.log(error);
-
-        document.getElementById(
-            'apiStatus'
-        ).classList.remove(
-            'badge-success'
-        );
-
-        document.getElementById(
-            'apiStatus'
-        ).classList.add(
-            'badge-danger'
-        );
-
-        document.getElementById(
-            'apiStatus'
-        ).innerHTML =
-        'Disconnected';
-
+    if (students.length === 0 && classes.length === 0 && majors.length === 0) {
+        el.innerHTML = '<p class="text-muted text-center">Belum ada aktivitas.</p>';
+        return;
     }
 
+    students.slice(0, 2).forEach(s => {
+        el.innerHTML += `
+        <div class="activity-item">
+            <div class="activity-dot" style="background:#4e73df"></div>
+            <div>
+                <strong>${s.user?.name ?? '-'}</strong>
+                <p class="mb-0 text-muted" style="font-size:12px;">Siswa terdaftar</p>
+            </div>
+        </div>`;
+    });
+
+    classes.slice(0, 1).forEach(c => {
+        el.innerHTML += `
+        <div class="activity-item">
+            <div class="activity-dot" style="background:#1cc88a"></div>
+            <div>
+                <strong>${c.grade} ${c.group_number}</strong>
+                <p class="mb-0 text-muted" style="font-size:12px;">Kelas tersedia</p>
+            </div>
+        </div>`;
+    });
+
+    majors.slice(0, 1).forEach(m => {
+        el.innerHTML += `
+        <div class="activity-item">
+            <div class="activity-dot" style="background:#f6c23e"></div>
+            <div>
+                <strong>${m.major_name}</strong>
+                <p class="mb-0 text-muted" style="font-size:12px;">Jurusan aktif</p>
+            </div>
+        </div>`;
+    });
 }
-
-/* =========================================
-   RECENT ACTIVITY
-========================================= */
-
-function renderActivity(
-    students,
-    classes,
-    majors
-){
-
-    const activity =
-    document.getElementById(
-        'recentActivity'
-    );
-
-    activity.innerHTML = '';
-
-    students.slice(0,2).forEach(student=>{
-
-        activity.innerHTML += `
-
-            <div class="activity-item">
-
-                <div class="activity-dot"></div>
-
-                <div>
-
-                    <strong>
-                        ${student.name}
-                    </strong>
-
-                    <p class="mb-0 text-muted">
-
-                        Siswa aktif pada sistem
-
-                    </p>
-
-                </div>
-
-            </div>
-
-        `;
-
-    });
-
-    classes.slice(0,1).forEach(item=>{
-
-        activity.innerHTML += `
-
-            <div class="activity-item">
-
-                <div class="activity-dot"></div>
-
-                <div>
-
-                    <strong>
-                        ${item.class_name ?? item.name}
-                    </strong>
-
-                    <p class="mb-0 text-muted">
-
-                        Kelas tersedia
-
-                    </p>
-
-                </div>
-
-            </div>
-
-        `;
-
-    });
-
-    majors.slice(0,1).forEach(item=>{
-
-        activity.innerHTML += `
-
-            <div class="activity-item">
-
-                <div class="activity-dot"></div>
-
-                <div>
-
-                    <strong>
-                        ${item.name}
-                    </strong>
-
-                    <p class="mb-0 text-muted">
-
-                        Jurusan aktif
-
-                    </p>
-
-                </div>
-
-            </div>
-
-        `;
-
-    });
-
-}
-
-/* =========================================
-   INIT
-========================================= */
 
 loadDashboard();
 
