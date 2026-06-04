@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
 
-    baseURL: 'http://10.6.160.79:8081/api',
+    baseURL: window.location.origin + '/api',
 
     headers: {
         'Accept': 'application/json',
@@ -11,7 +11,6 @@ const api = axios.create({
 
 });
 
-// otomatis ambil token
 api.interceptors.request.use((config) => {
 
     const token = localStorage.getItem('token');

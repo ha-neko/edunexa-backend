@@ -34,8 +34,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Satu kelas hanya boleh satu shift per hari
-            $table->unique(['classroom_id', 'day_of_week', 'deleted_at']);
-
+            $table->unique(['classroom_id', 'day_of_week', 'deleted_at'], 'cls_shift_day_del_unq');
             $table->foreign('classroom_id')
                   ->references('id')->on('classrooms')
                   ->onDelete('cascade');

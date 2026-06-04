@@ -38,8 +38,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// ── PUBLIC SCANNER ENDPOINTS (No Student Auth Required) ─────────────────
-Route::prefix('attendance')->group(function () {
+// ── SCANNER ENDPOINTS (Authenticated via secret header) ────────────────
+Route::middleware('scanner.auth')->prefix('attendance')->group(function () {
     Route::get ('scan/student-info', [QrScanController::class, 'studentInfo']); // Preview before scanning
     Route::post('scan',              [QrScanController::class, 'scan']);        // Clock in / out logging
 });

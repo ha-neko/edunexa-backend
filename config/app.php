@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'scanner_secret' => env('SCANNER_SECRET'),
+
+    'fonnte_token' => env('FONNTE_TOKEN'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -5,31 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Services\FonnteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
-/**
- * QrScanController
- *
- * Endpoint ini adalah inti dari sistem absensi QR.
- * Frontend scanner hanya mengirim token QR — semua validasi
- * (shift, jam, duplikasi, status terlambat) dilakukan di sini.
- *
- * Route: POST /api/attendance/scan  (public — tidak perlu login siswa)
- *        Diamankan via IP whitelist middleware atau secret header dari perangkat scanner.
- */
 class QrScanController extends Controller
 {
-    /**
-     * POST /api/attendance/scan
-     *
-     * Body:
-     * {
-     *   "qr_token": "abc123...",
-     *   "scan_type": "in"   // atau "out"
-     * }
-     */
+    protected FonnteService $fonnte;
+
+    public function __construct(FonnteService $fonnte)
+    {
+        $this->fonnte = $fonnte;
+    }
+
     public function scan(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -37,8 +26,7 @@ class QrScanController extends Controller
             'scan_type' => ['required', 'in:in,out'],
         ]);
 
-        // ── 1. Temukan siswa berdasarkan QR token ─────────────────────
-        $student = Student::with(['classroom', 'classroom.major', 'user'])
+        $student = Student::with(['classroom', 'classroom.major', 'user', 'guardian'])
             ->where('qr_token', $data['qr_token'])
             ->first();
 
@@ -49,7 +37,6 @@ class QrScanController extends Controller
             ], 404);
         }
 
-        // ── 2. Cari shift aktif hari ini untuk kelas siswa ────────────
         $todayShift = $student->getTodayShift();
 
         if (! $todayShift) {
@@ -60,15 +47,13 @@ class QrScanController extends Controller
             ], 422);
         }
 
-        $now  = Carbon::now();
+        $now   = Carbon::now();
         $today = $now->toDateString();
 
-        // ── 3. Validasi jam scan ──────────────────────────────────────
         $shiftStart = Carbon::parse($today . ' ' . $todayShift->start_time);
         $shiftEnd   = Carbon::parse($today . ' ' . $todayShift->end_time);
         $lateLimit  = Carbon::parse($today . ' ' . $todayShift->late_tolerance);
 
-        // Boleh scan masuk: 30 menit sebelum jam masuk sampai dengan jam pulang
         $scanOpenAt = $shiftStart->copy()->subMinutes(30);
 
         if ($now->lt($scanOpenAt)) {
@@ -83,14 +68,18 @@ class QrScanController extends Controller
             ], 422);
         }
 
-        // ── 4. Cek / buat record absensi hari ini ─────────────────────
-        $attendance = Attendance::firstOrNew([
-            'student_id'      => $student->id,
-            'attendance_date' => $today,
-        ]);
+        $attendance = Attendance::where('student_id', $student->id)
+            ->whereDate('attendance_date', $today)
+            ->first();
+
+        if (! $attendance) {
+            $attendance = new Attendance([
+                'student_id'      => $student->id,
+                'attendance_date' => $today,
+            ]);
+        }
 
         if ($data['scan_type'] === 'in') {
-            // Cegah scan masuk ganda
             if ($attendance->exists && $attendance->scan_in !== null) {
                 return response()->json([
                     'success'    => false,
@@ -100,9 +89,9 @@ class QrScanController extends Controller
                 ], 409);
             }
 
-            $isLate   = $now->gt($lateLimit);
-            $status   = $isLate ? 'hadir' : 'hadir'; // tetap hadir, tapi catat terlambat via notes
-            $notes    = $isLate
+            $isLate = $now->gt($lateLimit);
+            $status = 'hadir';
+            $notes  = $isLate
                 ? sprintf('Terlambat. Scan masuk pukul %s (batas toleransi %s).', $now->format('H:i'), $lateLimit->format('H:i'))
                 : null;
 
@@ -113,6 +102,8 @@ class QrScanController extends Controller
                 'updated_by' => null,
                 'notes'      => $notes,
             ])->save();
+
+            $this->notifyGuardian($student, 'in', $now->format('H:i'), $status);
 
             return response()->json([
                 'success'    => true,
@@ -126,7 +117,6 @@ class QrScanController extends Controller
             ]);
         }
 
-        // scan_type === 'out'
         if (! $attendance->exists || $attendance->scan_in === null) {
             return response()->json([
                 'success' => false,
@@ -144,7 +134,6 @@ class QrScanController extends Controller
             ], 409);
         }
 
-        // Validasi: tidak boleh scan keluar sebelum setengah jam masuk
         $minScanOut = Carbon::parse($today . ' ' . $attendance->scan_in)->addMinutes(30);
         if ($now->lt($minScanOut)) {
             return response()->json([
@@ -156,6 +145,8 @@ class QrScanController extends Controller
 
         $attendance->update(['scan_out' => $now->format('H:i:s')]);
 
+        $this->notifyGuardian($student, 'out', $now->format('H:i'), 'hadir');
+
         return response()->json([
             'success'    => true,
             'message'    => 'Scan keluar berhasil. Sampai jumpa!',
@@ -164,10 +155,6 @@ class QrScanController extends Controller
             'attendance' => $attendance->fresh(),
         ]);
     }
-
-    // ── GET /api/attendance/scan/student-info?qr_token=xxx ────────────────
-    // Dipakai frontend untuk preview info siswa setelah QR dibaca,
-    // SEBELUM konfirmasi scan. Tidak mencatat absensi.
 
     public function studentInfo(Request $request): JsonResponse
     {
@@ -183,7 +170,7 @@ class QrScanController extends Controller
             return response()->json(['success' => false, 'message' => 'QR tidak dikenali.'], 404);
         }
 
-        $todayShift    = $student->getTodayShift();
+        $todayShift      = $student->getTodayShift();
         $todayAttendance = $student->todayAttendance;
 
         return response()->json([
@@ -203,21 +190,33 @@ class QrScanController extends Controller
         ]);
     }
 
-    // ── POST /api/admin/students/{student}/regenerate-qr ─────────────────
-    // Hanya admin. Regenerate QR token (misal QR bocor/hilang).
-
     public function regenerateQr(string $studentId): JsonResponse
     {
         $student = Student::findOrFail($studentId);
         $token   = $student->regenerateQrToken();
 
         return response()->json([
-            'message'   => 'QR token berhasil digenerate ulang.',
-            'qr_token'  => $token,
+            'message'  => 'QR token berhasil digenerate ulang.',
+            'qr_token' => $token,
         ]);
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────
+    private function notifyGuardian(Student $student, string $scanType, string $time, string $status): void
+    {
+        $guardian = $student->guardian;
+
+        if (! $guardian || ! $guardian->phone_number) {
+            return;
+        }
+
+        $this->fonnte->sendAttendanceNotification(
+            $guardian->phone_number,
+            $student->user->name,
+            $scanType,
+            $time,
+            $status
+        );
+    }
 
     private function studentSummary(Student $student): array
     {
