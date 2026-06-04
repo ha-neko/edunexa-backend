@@ -24,7 +24,7 @@ Route::post('/auth/store-token', function(Request $request) {
 })->name('auth.store-token');
 
 // =====================
-// LOGOUT
+// LOGOUT   
 // =====================
 Route::post('/logout', function(Request $request) {
     $request->session()->flush();
