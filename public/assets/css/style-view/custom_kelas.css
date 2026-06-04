@@ -1,0 +1,244 @@
+/* =============================================
+   MASTER KELAS PAGE STYLES
+   public/css/kelas.css
+============================================= */
+
+/* ── Page Header ── */
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.page-header-left { display: flex; align-items: center; gap: 14px; }
+.page-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #4f8ef7 0%, #2563eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.page-title-text h1 {
+    color: #f1f5f9 !important;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 2px;
+}
+.page-title-text p {
+    color: #64748b;
+    margin: 0;
+    font-size: 12.5px;
+}
+
+/* ── Add Button ── */
+.btn-add-kelas {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #4f8ef7, #2563eb);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .18s, transform .18s;
+    white-space: nowrap;
+}
+.btn-add-kelas:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+
+/* ── Table Card ── */
+.table-card-kelas {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.07);
+    background: linear-gradient(135deg, rgba(15,23,42,.96), rgba(2,6,23,.98));
+}
+.table-card-kelas .card-body { padding: 0; }
+.table-card-kelas .table {
+    margin: 0;
+    background: transparent !important;
+}
+.table-card-kelas .table thead th {
+    background: rgba(2,6,23,.55);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 12px 16px;
+    white-space: nowrap;
+}
+.table-card-kelas .table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    transition: background .15s;
+}
+.table-card-kelas .table tbody tr:last-child { border-bottom: none; }
+.table-card-kelas .table tbody tr:hover { background: rgba(79,142,247,.05); }
+.table-card-kelas .table tbody td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    color: #cbd5e1;
+    font-size: 13px;
+    border-top: none;
+}
+.table-card-kelas .table tbody td:first-child {
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ── Major Cell ── */
+.major-cell-kelas { display: flex; align-items: center; gap: 10px; }
+.major-icon-kelas {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: rgba(79,142,247,.13);
+    color: #4f8ef7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.major-name-kelas {
+    font-weight: 600;
+    color: #e2e8f0;
+    font-size: 13.5px;
+}
+
+/* ── Grade Badge ── */
+.grade-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(168,85,247,.13);
+    color: #a855f7;
+    border: 1px solid rgba(168,85,247,.2);
+}
+
+/* ── Group Badge ── */
+.group-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: rgba(34,197,94,.1);
+    color: #22c55e;
+    border: 1px solid rgba(34,197,94,.2);
+}
+
+/* ── Year Badge ── */
+.year-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    color: #94a3b8;
+    font-family: monospace;
+    letter-spacing: .03em;
+}
+.year-badge i { color: #475569; font-size: 11px; }
+
+/* ── Action Buttons ── */
+.btn-action {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: transform .15s, opacity .15s;
+}
+.btn-action:hover { transform: scale(1.12); opacity: .85; }
+.btn-del-kelas { background: rgba(239,68,68,.13); color: #ef4444; }
+
+/* ── Empty / Loading ── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #475569;
+}
+.empty-state i { font-size: 38px; margin-bottom: 10px; display: block; }
+.empty-state p { font-size: 13.5px; margin: 0; }
+
+/* ── Modal ── */
+.modal-content {
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 16px;
+    color: #e2e8f0;
+}
+.modal-header {
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    padding: 1.1rem 1.25rem;
+}
+.modal-header h5 {
+    color: #f1f5f9 !important;
+    font-weight: 600;
+    margin: 0;
+    font-size: 15px;
+}
+.modal-body label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 5px;
+    display: block;
+}
+.modal-body .form-control {
+    background: rgba(2,6,23,.7);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #e2e8f0;
+    border-radius: 10px;
+    height: 40px;
+    font-size: 13.5px;
+    margin-bottom: 0;
+}
+.modal-body .form-control::placeholder { color: #475569; }
+.modal-body .form-control:focus {
+    border-color: #4f8ef7;
+    box-shadow: 0 0 0 3px rgba(79,142,247,.18);
+    background: rgba(2,6,23,.95);
+    color: #f1f5f9;
+}
+.modal-body .field { margin-bottom: 14px; }
+.modal-footer {
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding: 1rem 1.25rem;
+}
+.modal-footer .btn-secondary { border-radius: 10px; font-size: 13px; }
+.modal-footer .btn-primary   { border-radius: 10px; font-size: 13px; }
+
+/* ── Modal Alert ── */
+.modal-alert {
+    display: none;
+    padding: 9px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    background: rgba(239,68,68,.1);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,.2);
+}

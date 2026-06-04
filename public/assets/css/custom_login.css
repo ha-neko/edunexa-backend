@@ -1,0 +1,579 @@
+/* =====================================================
+   EDUNEXA AUTH MODERN UI
+===================================================== */
+
+body{
+    margin:0;
+    min-height:100vh;
+
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+
+    overflow:hidden;
+
+    font-family:'Nunito',sans-serif;
+
+    position:relative;
+
+    background:
+    radial-gradient(circle at top left, rgba(59,130,246,.16), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(37,99,235,.10), transparent 25%),
+    linear-gradient(135deg,#020617,#0f172a,#111827,#020617);
+}
+
+/* =====================================================
+   BACKGROUND GLOW
+===================================================== */
+
+body::before{
+    content:'';
+
+    position:absolute;
+
+    left:-180px;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    width:760px;
+    height:760px;
+
+    border-radius:50%;
+
+    background:rgba(37,99,235,.12);
+
+    filter:blur(80px);
+
+    z-index:0;
+}
+
+body::after{
+    content:'';
+
+    position:absolute;
+
+    right:-120px;
+    bottom:-120px;
+
+    width:420px;
+    height:420px;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.04);
+
+    filter:blur(20px);
+
+    z-index:0;
+}
+
+/* =====================================================
+   WELCOME SIDE
+===================================================== */
+
+.welcome-side{
+    position:absolute;
+
+    left:7%;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    width:42%;
+
+    z-index:2;
+
+    color:#fff;
+
+    animation:
+    fadeSlideIn 1s ease forwards,
+    floatText 5s ease-in-out infinite;
+
+    opacity:0;
+}
+
+.company-logo{
+    width:100px;
+    height:100px;
+
+    border-radius:28px;
+
+    background:
+    linear-gradient(
+        145deg,
+        rgba(255,255,255,.10),
+        rgba(255,255,255,.04)
+    );
+
+    border:
+    1px solid rgba(255,255,255,.08);
+
+    backdrop-filter:blur(18px);
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    font-size:42px;
+
+    margin-bottom:28px;
+
+    box-shadow:
+    0 20px 40px rgba(0,0,0,.30);
+}
+
+.welcome-title{
+    font-size:clamp(42px,5vw,68px);
+
+    font-weight:900;
+
+    line-height:1.05;
+
+    margin:0;
+
+    color:#fff;
+
+    letter-spacing:-2px;
+
+    text-shadow:
+    0 15px 35px rgba(0,0,0,.35);
+}
+
+.company-name{
+    font-size:34px;
+
+    font-weight:700;
+
+    margin-top:16px;
+    margin-bottom:22px;
+
+    color:#93c5fd;
+}
+
+.welcome-desc{
+    font-size:17px;
+
+    line-height:1.9;
+
+    max-width:560px;
+
+    color:rgba(255,255,255,.74);
+}
+
+/* =====================================================
+   LOGIN BOX
+===================================================== */
+
+.auth-box,
+.login-box,
+.register-box,
+.reset-box,
+.forgot-box{
+    position:relative;
+
+    z-index:5;
+
+    width:100%;
+    max-width:500px;
+
+    min-height:100vh;
+
+    padding:60px 55px;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+
+    background:
+    linear-gradient(
+        160deg,
+        rgba(15,23,42,.96),
+        rgba(2,6,23,.98)
+    );
+
+    border-left:
+    1px solid rgba(255,255,255,.06);
+
+    backdrop-filter:blur(20px);
+
+    box-shadow:
+    -15px 0 45px rgba(0,0,0,.45);
+
+    animation:fadeUp .8s ease;
+}
+
+/* =====================================================
+   TITLE
+===================================================== */
+
+.login-title,
+.auth-title{
+    font-size:34px;
+
+    font-weight:800;
+
+    color:#ffffff !important;
+
+    margin-bottom:10px;
+}
+
+.login-subtitle,
+.auth-subtitle{
+    color:#94a3b8;
+
+    font-size:15px;
+
+    font-weight:500;
+}
+
+/* =====================================================
+   INPUT
+===================================================== */
+
+.form-group{
+    margin-bottom:20px;
+}
+
+.form-control-user{
+    width:100%;
+
+    height:58px;
+
+    background:
+    rgba(255,255,255,.05);
+
+    border:
+    1px solid rgba(255,255,255,.08);
+
+    border-radius:16px !important;
+
+    padding:0 20px;
+
+    color:#fff !important;
+
+    font-size:15px;
+    font-weight:600;
+
+    transition:.3s;
+
+    box-sizing:border-box;
+
+    box-shadow:none !important;
+}
+
+.form-control-user::placeholder{
+    color:#64748b;
+}
+
+.form-control-user:focus{
+    background:
+    rgba(255,255,255,.07);
+
+    border-color:#3b82f6 !important;
+
+    color:#fff;
+
+    transform:translateY(-2px);
+
+    box-shadow:
+    0 0 0 4px rgba(59,130,246,.12),
+    0 10px 25px rgba(37,99,235,.18) !important;
+}
+
+/* =====================================================
+   BUTTON
+===================================================== */
+
+.btn-login,
+.btn-auth,
+.btn-user{
+    width:100%;
+
+    height:56px;
+
+    border:none !important;
+
+    border-radius:16px !important;
+
+    font-size:15px;
+    font-weight:800;
+
+    color:#fff !important;
+
+    letter-spacing:.5px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #2563eb,
+        #1d4ed8,
+        #1e40af
+    );
+
+    box-shadow:
+    0 15px 25px rgba(37,99,235,.35);
+
+    transition:.35s;
+}
+
+.btn-login:hover,
+.btn-auth:hover,
+.btn-user:hover{
+    transform:translateY(-4px);
+
+    box-shadow:
+    0 20px 35px rgba(37,99,235,.45);
+}
+
+/* =====================================================
+   GOOGLE BUTTON
+===================================================== */
+
+.btn-google{
+    width:100%;
+
+    height:56px;
+
+    border-radius:16px;
+
+    border:
+    1px solid rgba(255,255,255,.08);
+
+    background:
+    rgba(255,255,255,.04);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+
+    color:#f8fafc !important;
+
+    font-weight:700;
+
+    text-decoration:none !important;
+
+    transition:.3s;
+}
+
+.btn-google img{
+    width:22px;
+    height:22px;
+}
+
+.btn-google:hover{
+    background:
+    rgba(255,255,255,.07);
+
+    transform:translateY(-2px);
+
+    box-shadow:
+    0 10px 20px rgba(0,0,0,.18);
+}
+
+/* =====================================================
+   DIVIDER
+===================================================== */
+
+.auth-divider{
+    display:flex;
+    align-items:center;
+
+    margin:28px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after{
+    content:'';
+
+    flex:1;
+
+    height:1px;
+
+    background:
+    rgba(255,255,255,.08);
+}
+
+.auth-divider span{
+    padding:0 14px;
+
+    font-size:12px;
+    font-weight:700;
+
+    color:#64748b;
+
+    letter-spacing:1px;
+}
+
+/* =====================================================
+   TEXT
+===================================================== */
+
+.small{
+    color:#60a5fa !important;
+
+    font-weight:700;
+
+    text-decoration:none;
+}
+
+.small:hover{
+    color:#93c5fd !important;
+
+    text-decoration:none;
+}
+
+.text-muted{
+    color:#94a3b8 !important;
+}
+
+hr{
+    border-top:
+    1px solid rgba(255,255,255,.08);
+}
+
+/* =====================================================
+   ALERT
+===================================================== */
+
+.alert-danger,
+.alert-success{
+    border:none;
+
+    border-radius:14px;
+
+    font-size:14px;
+
+    font-weight:600;
+}
+
+/* =====================================================
+   ANIMATION
+===================================================== */
+
+@keyframes floatText{
+    0%{
+        transform:translateY(-50%);
+    }
+
+    50%{
+        transform:translateY(calc(-50% - 12px));
+    }
+
+    100%{
+        transform:translateY(-50%);
+    }
+}
+
+@keyframes fadeSlideIn{
+    from{
+        opacity:0;
+        transform:
+        translateY(-50%)
+        translateX(-70px);
+    }
+
+    to{
+        opacity:1;
+        transform:
+        translateY(-50%)
+        translateX(0);
+    }
+}
+
+@keyframes fadeUp{
+    from{
+        opacity:0;
+        transform:translateY(35px);
+    }
+
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media(max-width:1200px){
+
+    .welcome-side{
+        width:38%;
+    }
+
+    .welcome-title{
+        font-size:50px;
+    }
+
+    .company-name{
+        font-size:28px;
+    }
+
+    .welcome-desc{
+        font-size:16px;
+        max-width:420px;
+    }
+}
+
+@media(max-width:768px){
+
+    body{
+        justify-content:center;
+
+        padding:20px;
+    }
+
+    .welcome-side{
+        display:none;
+    }
+
+    .auth-box,
+    .login-box,
+    .register-box,
+    .forgot-box,
+    .reset-box{
+        max-width:440px;
+
+        min-height:auto;
+
+        border-radius:28px;
+
+        padding:40px 28px;
+
+        border:
+        1px solid rgba(255,255,255,.06);
+    }
+
+    .login-title,
+    .auth-title{
+        font-size:28px;
+    }
+}
+
+@media(max-width:480px){
+
+    .auth-box,
+    .login-box,
+    .register-box,
+    .forgot-box,
+    .reset-box{
+        padding:35px 22px;
+    }
+
+    .login-title,
+    .auth-title{
+        font-size:24px;
+    }
+
+    .form-control-user{
+        height:54px;
+    }
+
+    .btn-login,
+    .btn-google{
+        height:54px;
+    }
+}
