@@ -229,22 +229,22 @@ startBtn.addEventListener('click', async () => {
 
                     console.log("RESPONSE:", response.data);
 
-                    const data = response.data.data;
+                    const r = response.data;
 
                     // UPDATE UI
-                    document.getElementById('studentName').innerHTML     = data.student?.name ?? 'Tidak diketahui';
-                    document.getElementById('studentClass').innerHTML    = data.student?.classroom?.name ?? '-';
-                    document.getElementById('studentNis').innerHTML      = data.student?.nis ?? '-';
-                    document.getElementById('studentStatus').innerHTML   = data.status ?? 'Hadir';
-                    document.getElementById('studentJamMasuk').innerHTML = data.check_in ?? '-';
-                    document.getElementById('studentJamPulang').innerHTML = data.check_out ?? '-';
-                    document.getElementById('studentTanggal').innerHTML  = data.date ?? '-';
+                    document.getElementById('studentName').innerHTML     = r.student?.name ?? 'Tidak diketahui';
+                    document.getElementById('studentClass').innerHTML    = r.student?.classroom ?? '-';
+                    document.getElementById('studentNis').innerHTML      = r.student?.nis ?? '-';
+                    document.getElementById('studentStatus').innerHTML   = r.attendance?.status ?? 'Hadir';
+                    document.getElementById('studentJamMasuk').innerHTML = r.attendance?.scan_in ?? '-';
+                    document.getElementById('studentJamPulang').innerHTML = r.attendance?.scan_out ?? '-';
+                    document.getElementById('studentTanggal').innerHTML  = r.attendance?.attendance_date ?? '-';
 
                     document.getElementById('studentAvatar').src =
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(data.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
 
                     document.getElementById('successBox').style.display = 'flex';
-                    document.getElementById('successMessage').innerHTML = response.data.message ?? 'Absensi berhasil';
+                    document.getElementById('successMessage').innerHTML = r.message ?? 'Absensi berhasil';
 
                     // TABLE
                     totalScan++;
@@ -253,16 +253,16 @@ startBtn.addEventListener('click', async () => {
                         <tr>
                             <td>${totalScan}</td>
                             <td class="d-flex align-items-center">
-                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(data.student?.name ?? 'Siswa')}&background=2563eb&color=fff"
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff"
                                     width="45" class="rounded-circle mr-3">
                                 <div>
-                                    <strong>${data.student?.name ?? '-'}</strong><br>
-                                    <small>${data.student?.nis ?? '-'}</small>
+                                    <strong>${r.student?.name ?? '-'}</strong><br>
+                                    <small>${r.student?.nis ?? '-'}</small>
                                 </div>
                             </td>
-                            <td>${data.student?.classroom?.name ?? '-'}</td>
-                            <td>${data.check_in ?? '-'}</td>
-                            <td><span class="badge badge-success px-3 py-2">${data.status ?? 'Hadir'}</span></td>
+                            <td>${r.student?.classroom ?? '-'}</td>
+                            <td>${r.attendance?.scan_in ?? '-'}</td>
+                            <td><span class="badge badge-success px-3 py-2">${r.attendance?.status ?? 'Hadir'}</span></td>
                         </tr>`;
 
                 } catch(apiError) {
