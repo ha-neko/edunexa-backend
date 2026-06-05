@@ -176,6 +176,7 @@
 /* =====================================
    CONFIG
 ===================================== */
+const BASE_URL    = window.location.origin;
 const API_URL     = BASE_URL + '/api/attendance/scan';
 const token       = '{{ session("token") }}';
 const csrfToken   = '{{ csrf_token() }}';
@@ -186,9 +187,6 @@ const axiosConfig = {
         'Content-Type': 'application/json'
     }
 };
-
-// ── Use consistent origin for API calls ──
-const BASE_URL = window.location.origin;
 
 let scanner       = null;
 let totalScan     = 0;
