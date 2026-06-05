@@ -305,6 +305,9 @@ document.getElementById('saveAssignBtn').addEventListener('click', async () => {
     btn.disabled = false;
     status.textContent = `${success} kelas berhasil disimpan${failed ? `, ${failed} gagal (cek console)` : ''}.`;
     setTimeout(() => status.textContent = '', 5000);
+
+    // Refresh "Kelas Terdaftar" count
+    await loadShifts();
 });
 
 // ── Init ────────────────────────────────────────────────────────────
