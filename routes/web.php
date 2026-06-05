@@ -82,7 +82,7 @@ Route::post('/scanner/store-scan', function(Request $request) {
     session(['scanner_attendance' => $sessionData]);
 
     return response()->json(['success' => true, 'total' => count($sessionData['list'])]);
-})->middleware('auth');
+});
 
 // =====================
 // ADMIN ROUTES

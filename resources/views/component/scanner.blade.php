@@ -177,6 +177,7 @@
 ===================================== */
 const API_URL     = '{{ rtrim(config("app.url"), "/") }}/api/attendance/scan';
 const token       = '{{ session("token") }}';
+const csrfToken   = '{{ csrf_token() }}';
 const axiosConfig = {
     headers: {
         Authorization : `Bearer ${token}`,
@@ -370,6 +371,8 @@ async function processQrCode(decodedText) {
         axios.post('/scanner/store-scan', {
             student:   r.student,
             attendance: r.attendance,
+        }, {
+            headers: { 'X-CSRF-TOKEN': csrfToken }
         }).catch(() => {});
 
     } catch(apiError) {
