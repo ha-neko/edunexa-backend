@@ -113,6 +113,7 @@
                             <th>Jurusan</th>
                             <th>Kelas</th>
                             <th>Wali Murid</th>
+                            <th>No. Orang Tua</th>
                             <th>Status</th>
                             <th style="width:130px">Aksi</th>
                         </tr>
@@ -180,6 +181,12 @@
                             <label>Password</label>
                             <input type="password" class="form-control" id="password" placeholder="Min. 8 karakter">
                             <small class="field-error" id="err-password"></small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label>No. Orang Tua</label>
+                            <input type="text" class="form-control" id="parent_phone" placeholder="Otomatis terisi dari wali murid">
+                            <small class="text-muted" style="font-size:11px;">Akan menyimpan ke data wali murid yang dipilih.</small>
                         </div>
 
                         {{--
@@ -254,6 +261,11 @@
                     <div class="col-md-6 mb-3">
                         <label>Password <small class="text-muted">(kosongkan jika tidak diubah)</small></label>
                         <input type="password" class="form-control" id="editPassword" placeholder="Password baru">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>No. Orang Tua</label>
+                        <input type="text" class="form-control" id="editParentPhone" placeholder="Contoh: 08123456789">
                     </div>
 
                     <div class="col-md-12 mb-3">
@@ -491,12 +503,27 @@ async function loadGuardians() {
         const res = await axios.get(`${GUARDIAN_URL}?per_page=100`, axiosConfig);
         guardianSelect.innerHTML = '<option value="">-- Tidak Ada --</option>';
         res.data.data.forEach(g => {
-            guardianSelect.innerHTML += `<option value="${g.id}">${g.user?.name ?? '-'}</option>`;
+            const phone = g.phone_number ?? '';
+            guardianSelect.innerHTML += `<option value="${g.id}" data-phone="${phone}">${g.user?.name ?? '-'}</option>`;
         });
     } catch(e) {
         console.error('Gagal memuat wali murid:', e);
     }
 }
+
+// Auto-fill phone when guardian selected (create form)
+guardianSelect.addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    document.getElementById('parent_phone').value = opt?.dataset?.phone ?? '';
+});
+
+// Auto-fill phone when guardian selected (edit form)
+document.addEventListener('change', function(e) {
+    if (e.target.id === 'editGuardian') {
+        const opt = e.target.options[e.target.selectedIndex];
+        document.getElementById('editParentPhone').value = opt?.dataset?.phone ?? '';
+    }
+});
 
 /* ══════════════════════════════════════════
    GET & RENDER STUDENTS
@@ -546,6 +573,7 @@ function renderStudents(students) {
         const majorName     = student.classroom?.major?.major_name ?? '-';
         const classroomName = `${student.classroom?.grade ?? ''} ${student.classroom?.group_number ?? ''}`.trim();
         const guardianName  = student.guardian?.user?.name ?? '-';
+        const parentPhone   = student.guardian?.phone_number ?? '';
         const status        = student.deleted_at ? 'inactive' : 'active';
 
         if (status === 'active') active++; else inactive++;
@@ -616,6 +644,7 @@ saveBtn.addEventListener('click', async () => {
             nis:          document.getElementById('nis').value.trim(),
             classroom_id: document.getElementById('classroom_id').value,
             guardian_id:  document.getElementById('guardian_id').value || null,
+            parent_phone: document.getElementById('parent_phone').value.trim() || null,
         };
 
         const res = await axios.post(STUDENT_URL, payload, axiosConfig);
@@ -717,6 +746,7 @@ async function editStudent(id) {
         document.getElementById('editEmail').value     = student.user?.email ?? '';
         document.getElementById('editNis').value       = student.nis         ?? '';
         document.getElementById('editPassword').value  = '';
+        document.getElementById('editParentPhone').value = student.parent_phone ?? '';
 
         // Isi dropdown kelas
         const editClassroom = document.getElementById('editClassroom');
@@ -738,9 +768,14 @@ async function editStudent(id) {
 
         editGuardian.innerHTML = '<option value="">-- Tidak Ada --</option>';
         resGuardian.data.data.forEach(g => {
+            const phone    = g.phone_number ?? '';
             const selected = g.id == student.guardian?.id ? 'selected' : '';
-            editGuardian.innerHTML += `<option value="${g.id}" ${selected}>${g.user?.name ?? '-'}</option>`;
+            editGuardian.innerHTML += `<option value="${g.id}" ${selected} data-phone="${phone}">${g.user?.name ?? '-'}</option>`;
         });
+
+        // Fill phone from selected guardian
+        const editOpt = editGuardian.options[editGuardian.selectedIndex];
+        document.getElementById('editParentPhone').value = editOpt?.dataset?.phone ?? '';
 
         $('#editStudentModal').modal('show');
 
@@ -768,6 +803,7 @@ document.getElementById('updateStudentBtn').addEventListener('click', async () =
         nis:          document.getElementById('editNis').value.trim(),
         classroom_id: document.getElementById('editClassroom').value,
         guardian_id:  document.getElementById('editGuardian').value || null,
+        parent_phone: document.getElementById('editParentPhone').value.trim() || null,
     };
 
     // Hanya kirim password jika diisi
