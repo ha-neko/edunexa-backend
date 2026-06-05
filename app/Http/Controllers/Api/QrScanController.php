@@ -123,19 +123,6 @@ class QrScanController extends Controller
             ], 409);
         }
 
-        // Blokir scan keluar SELAMA jam pelajaran (start_time ~ end_time)
-        if ($now->between($shiftStart, $shiftEnd)) {
-            return response()->json([
-                'success' => false,
-                'message' => sprintf(
-                    'Belum bisa scan keluar. Jam pelajaran masih berlangsung hingga %s.',
-                    $shiftEnd->format('H:i')
-                ),
-                'student'    => $this->studentSummary($student),
-                'attendance' => $attendance,
-            ], 422);
-        }
-
         $minScanOut = Carbon::parse($today . ' ' . $attendance->scan_in)->addMinutes(30);
         if ($now->lt($minScanOut)) {
             return response()->json([
