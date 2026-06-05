@@ -176,7 +176,7 @@
 /* =====================================
    CONFIG
 ===================================== */
-const API_URL     = '{{ rtrim(config("app.url"), "/") }}/api/attendance/scan';
+const API_URL     = BASE_URL + '/api/attendance/scan';
 const token       = '{{ session("token") }}';
 const csrfToken   = '{{ csrf_token() }}';
 const axiosConfig = {
@@ -187,10 +187,8 @@ const axiosConfig = {
     }
 };
 
-// ── Axios global CSRF config ──
-axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
-axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
-axios.defaults.withCredentials = true;
+// ── Use consistent origin for API calls ──
+const BASE_URL = window.location.origin;
 
 let scanner       = null;
 let totalScan     = 0;
@@ -201,7 +199,7 @@ let lastScanTime  = 0;
    ATTENDANCE API — load today's list
 ===================================== */
 const scannedIds = new Set();
-const API_TODAY  = '{{ rtrim(config("app.url"), "/") }}/api/attendance/today';
+const API_TODAY  = BASE_URL + '/api/attendance/today';
 
 (async function loadToday() {
     try {
