@@ -49,6 +49,16 @@
                             <i class="fas fa-camera mr-2"></i>
                             <span>Mulai Scan</span>
                         </button>
+                        <div id="photoSection" style="display:none;" class="w-100">
+                            <button class="scanner-btn btn-info w-100 mb-1" id="capturePhotoBtn">
+                                <i class="fas fa-camera-retro mr-2"></i> Ambil Foto Verifikasi
+                            </button>
+                            <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+                            <div id="photoPreview" class="mt-2" style="display:none;">
+                                <img id="photoPreviewImg" class="rounded shadow-sm" style="width:100%; max-height:150px; object-fit:cover;">
+                                <small class="text-muted d-block mt-1">Foto terverifikasi</small>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -189,6 +199,7 @@ const scanTypeIn   = document.getElementById('scanTypeIn');
 const scanTypeOut  = document.getElementById('scanTypeOut');
 
 let scanType = 'in';
+let verifyPhotoBase64 = null;
 
 scanTypeIn.addEventListener('click', () => {
     scanType = 'in';
@@ -199,6 +210,29 @@ scanTypeOut.addEventListener('click', () => {
     scanType = 'out';
     scanTypeOut.classList.add('active');
     scanTypeIn.classList.remove('active');
+});
+
+// ── Photo capture ──
+const photoSection    = document.getElementById('photoSection');
+const captureBtn      = document.getElementById('capturePhotoBtn');
+const photoInput      = document.getElementById('photoInput');
+const photoPreview    = document.getElementById('photoPreview');
+const photoPreviewImg = document.getElementById('photoPreviewImg');
+
+captureBtn.addEventListener('click', () => photoInput.click());
+
+photoInput.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (! file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        verifyPhotoBase64 = ev.target.result;
+        photoPreviewImg.src = verifyPhotoBase64;
+        photoPreview.style.display = 'block';
+        captureBtn.innerHTML = '<i class="fas fa-redo mr-2"></i> Ulang Foto';
+    };
+    reader.readAsDataURL(file);
 });
 
 /* =====================================
@@ -239,15 +273,14 @@ startBtn.addEventListener('click', async () => {
                 if (now - lastScanTime < 3000) return;
                 lastScanTime = now;
 
-                try {
-                    console.log("HIT API:", API_URL);
-                    console.log("TOKEN:", token);
+                    try {
+                        const payload = { qr_token: decodedText, scan_type: scanType };
 
-                    const response = await axios.post(
-                        API_URL,
-                        { qr_token: decodedText, scan_type: scanType },
-                        axiosConfig
-                    );
+                        if (verifyPhotoBase64) {
+                            payload.verify_photo = verifyPhotoBase64;
+                        }
+
+                        const response = await axios.post(API_URL, payload, axiosConfig);
 
                     console.log("RESPONSE:", response.data);
 
@@ -271,6 +304,9 @@ startBtn.addEventListener('click', async () => {
 
                     document.getElementById('successBox').style.display = 'flex';
                     document.getElementById('successMessage').innerHTML = r.message ?? 'Absensi berhasil';
+
+                    // Show photo capture section
+                    photoSection.style.display = 'block';
 
                     // TABLE
                     totalScan++;

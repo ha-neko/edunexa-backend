@@ -17,8 +17,70 @@ class AttendancePdfController extends Controller
         return auth('api')->user()->teacher;
     }
 
+    public function daily(Request $request): Response
+    {
+        $request->validate([
+            'classroom_id' => ['required', 'ulid', 'exists:classrooms,id'],
+            'date'         => ['nullable', 'date'],
+        ]);
+
+        $teacher      = $this->teacher();
+        $classroomIds = $teacher->classrooms()->pluck('id');
+
+        if (! $classroomIds->contains($request->classroom_id)) {
+            abort(403, 'Anda bukan wali kelas ini.');
+        }
+
+        $date      = $request->date ? Carbon::parse($request->date) : today();
+        $classroom = Classroom::with(['major', 'waliKelas.user'])->findOrFail($request->classroom_id);
+
+        $attendances = Attendance::with(['student.user'])
+            ->whereDate('attendance_date', $date)
+            ->whereHas('student', fn ($q) => $q->where('classroom_id', $classroom->id))
+            ->orderBy('scan_in')
+            ->get();
+
+        $students = $classroom->students()->with('user')->orderBy('id')->get();
+
+        $rows = $students->map(function ($student, $idx) use ($attendances) {
+            $att = $attendances->firstWhere('student_id', $student->id);
+            return [
+                'no'       => $idx + 1,
+                'nis'      => $student->nis,
+                'name'     => $student->user->name,
+                'scan_in'  => $att ? substr($att->scan_in ?? '', 0, 5) : '-',
+                'scan_out' => $att ? substr($att->scan_out ?? '', 0, 5) : '-',
+                'status'   => $att ? $att->status : 'alpha',
+                'late'     => $att ? (bool) ($att->notes && str_contains($att->notes, 'Terlambat')) : false,
+            ];
+        });
+
+        $summary = [
+            'hadir' => $rows->where('status', 'hadir')->count(),
+            'telat' => $rows->where('status', 'telat')->count(),
+            'izin'  => $rows->where('status', 'izin')->count(),
+            'sakit' => $rows->where('status', 'sakit')->count(),
+            'alpha' => $rows->where('status', 'alpha')->count(),
+        ];
+
+        $pdf = Pdf::loadView('pdf.attendance-daily', compact(
+            'classroom', 'rows', 'date', 'summary'
+        ) + ['generatedAt' => now()]);
+
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption(['dpi' => 110, 'defaultFont' => 'sans-serif', 'isRemoteEnabled' => false]);
+
+        $filename = sprintf(
+            'Absensi_Harian_%s_%s.pdf',
+            str_replace([' ', '/'], '_', $classroom->label),
+            $date->format('d-m-Y')
+        );
+
+        return $pdf->download($filename);
+    }
+
     /**
-     * GET /api/guru/reports/attendance/pdf
+     * GET /api/guru/reports/attendance/pdf/range
      *
      * Query params:
      *   classroom_id  (required) — kelas yang diwali oleh guru ini
@@ -71,7 +133,7 @@ class AttendancePdfController extends Controller
         // ── Bangun baris tabel ─────────────────────────────────────────
         $rows = $students->map(function ($student, $idx) use ($dates) {
             $map     = $student->attendances->keyBy(fn ($a) => Carbon::parse($a->attendance_date)->toDateString());
-            $summary = ['hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0];
+            $summary = ['hadir' => 0, 'telat' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0];
             $daily   = [];
 
             foreach ($dates as $date) {
@@ -97,6 +159,7 @@ class AttendancePdfController extends Controller
 
         $classTotal = [
             'hadir' => $rows->sum(fn ($r) => $r['summary']['hadir']),
+            'telat' => $rows->sum(fn ($r) => $r['summary']['telat']),
             'izin'  => $rows->sum(fn ($r) => $r['summary']['izin']),
             'sakit' => $rows->sum(fn ($r) => $r['summary']['sakit']),
             'alpha' => $rows->sum(fn ($r) => $r['summary']['alpha']),

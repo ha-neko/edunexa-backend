@@ -9,6 +9,7 @@ use App\Services\FonnteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class QrScanController extends Controller
 {
@@ -22,8 +23,9 @@ class QrScanController extends Controller
     public function scan(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'qr_token'  => ['required', 'string'],
-            'scan_type' => ['required', 'in:in,out'],
+            'qr_token'     => ['required', 'string'],
+            'scan_type'    => ['required', 'in:in,out'],
+            'verify_photo' => ['nullable', 'string'], // base64 image
         ]);
 
         $student = Student::with(['classroom', 'classroom.major', 'user', 'guardian'])
@@ -90,10 +92,12 @@ class QrScanController extends Controller
             }
 
             $isLate = $now->gt($lateLimit);
-            $status = 'hadir';
+            $status = $isLate ? 'telat' : 'hadir';
             $notes  = $isLate
                 ? sprintf('Terlambat. Scan masuk pukul %s (batas toleransi %s).', $now->format('H:i'), $lateLimit->format('H:i'))
                 : null;
+
+            $photoPath = $this->savePhoto($data['verify_photo'] ?? null, $student->nis);
 
             $attendance->fill([
                 'shift_id'   => $todayShift->id,
@@ -101,6 +105,7 @@ class QrScanController extends Controller
                 'scan_in'    => $now->format('H:i:s'),
                 'updated_by' => null,
                 'notes'      => $notes,
+                'photo'      => $photoPath,
             ])->save();
 
             $this->notifyGuardian($student, 'in', $now->format('H:i'), $status);
@@ -116,6 +121,8 @@ class QrScanController extends Controller
                 'attendance' => $attendance,
             ]);
         }
+
+        // ── scan_type === 'out' ──────────────────────────────────────────
 
         if (! $attendance->exists || $attendance->scan_in === null) {
             return response()->json([
@@ -134,6 +141,19 @@ class QrScanController extends Controller
             ], 409);
         }
 
+        // Blokir scan keluar SELAMA jam pelajaran (start_time ~ end_time)
+        if ($now->between($shiftStart, $shiftEnd)) {
+            return response()->json([
+                'success' => false,
+                'message' => sprintf(
+                    'Belum bisa scan keluar. Jam pelajaran masih berlangsung hingga %s.',
+                    $shiftEnd->format('H:i')
+                ),
+                'student'    => $this->studentSummary($student),
+                'attendance' => $attendance,
+            ], 422);
+        }
+
         $minScanOut = Carbon::parse($today . ' ' . $attendance->scan_in)->addMinutes(30);
         if ($now->lt($minScanOut)) {
             return response()->json([
@@ -145,7 +165,7 @@ class QrScanController extends Controller
 
         $attendance->update(['scan_out' => $now->format('H:i:s')]);
 
-        $this->notifyGuardian($student, 'out', $now->format('H:i'), 'hadir');
+        $this->notifyGuardian($student, 'out', $now->format('H:i'), $attendance->status);
 
         return response()->json([
             'success'    => true,
@@ -199,6 +219,25 @@ class QrScanController extends Controller
             'message'  => 'QR token berhasil digenerate ulang.',
             'qr_token' => $token,
         ]);
+    }
+
+    private function savePhoto(?string $base64, string $nis): ?string
+    {
+        if (! $base64) return null;
+
+        if (str_contains($base64, ',')) {
+            $base64 = explode(',', $base64, 2)[1];
+        }
+
+        $decoded = base64_decode($base64, true);
+        if ($decoded === false) return null;
+
+        $filename = sprintf('%s_%s.png', $nis, Carbon::now()->format('Ymd_His'));
+        $path     = 'attendance-photos/' . $filename;
+
+        Storage::disk('public')->put($path, $decoded);
+
+        return $path;
     }
 
     private function notifyGuardian(Student $student, string $scanType, string $time, string $status): void

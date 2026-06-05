@@ -87,6 +87,7 @@
 
   /* ── STATUS BADGES ── */
   .s-hadir { color: #276749; font-weight: bold; }
+  .s-telat { color: #d69e2e; font-weight: bold; }
   .s-izin  { color: #744210; font-weight: bold; }
   .s-sakit { color: #2b6cb0; font-weight: bold; }
   .s-alpha { color: #c53030; font-weight: bold; }
@@ -213,10 +214,11 @@
       </th>
       @endforeach
       {{-- Rekap --}}
-      <th style="width:20px; background:#2d6a4f">H</th>
-      <th style="width:20px; background:#7b4f12">I</th>
-      <th style="width:20px; background:#1d4e89">S</th>
-      <th style="width:20px; background:#8b1a1a">A</th>
+      <th style="width:18px; background:#2d6a4f">H</th>
+      <th style="width:18px; background:#d69e2e">T</th>
+      <th style="width:18px; background:#7b4f12">I</th>
+      <th style="width:18px; background:#1d4e89">S</th>
+      <th style="width:18px; background:#8b1a1a">A</th>
     </tr>
     <tr>
       @foreach($dates as $date)
@@ -225,6 +227,7 @@
       </th>
       @endforeach
       <th style="font-size:6.5px; background:#2d6a4f">Hadir</th>
+      <th style="font-size:6.5px; background:#d69e2e">Telat</th>
       <th style="font-size:6.5px; background:#7b4f12">Izin</th>
       <th style="font-size:6.5px; background:#1d4e89">Sakit</th>
       <th style="font-size:6.5px; background:#8b1a1a">Alpha</th>
@@ -244,8 +247,8 @@
           $st   = $info['status'];
         @endphp
         <td>
-          @if($st === 'hadir')
-            @if($info['late'])
+          @if($st === 'hadir' || $st === 'telat')
+            @if($info['late'] || $st === 'telat')
               <span class="s-late" title="Terlambat {{ $info['scan_in'] }}">T</span>
             @else
               <span class="s-hadir">✓</span>
@@ -261,6 +264,7 @@
       @endforeach
 
       <td class="col-sum s-hadir">{{ $row['summary']['hadir'] }}</td>
+      <td class="col-sum s-telat">{{ $row['summary']['telat'] }}</td>
       <td class="col-sum s-izin">{{ $row['summary']['izin'] }}</td>
       <td class="col-sum s-sakit">{{ $row['summary']['sakit'] }}</td>
       <td class="col-sum s-alpha">{{ $row['summary']['alpha'] }}</td>
@@ -276,6 +280,7 @@
       <td></td>
       @endforeach
       <td class="s-hadir">{{ $classTotal['hadir'] }}</td>
+      <td class="s-telat">{{ $classTotal['telat'] }}</td>
       <td class="s-izin">{{ $classTotal['izin'] }}</td>
       <td class="s-sakit">{{ $classTotal['sakit'] }}</td>
       <td class="s-alpha">{{ $classTotal['alpha'] }}</td>
@@ -286,7 +291,7 @@
 {{-- ── LEGEND ──────────────────────────────────────────────────── --}}
 <div class="legend">
   <span><b class="s-hadir">✓</b> = Hadir</span>
-  <span><b class="s-late">T</b> = Terlambat</span>
+  <span><b class="s-telat">T</b> = Telat</span>
   <span><b class="s-izin">I</b> = Izin</span>
   <span><b class="s-sakit">S</b> = Sakit</span>
   <span><b class="s-alpha">A</b> = Alpha/Tanpa Keterangan</span>
@@ -295,30 +300,37 @@
 {{-- ── REKAPITULASI ─────────────────────────────────────────────── --}}
 <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
   <tr>
-    <td style="width:25%; padding:4px 8px 4px 0; vertical-align:top">
+    <td style="width:20%; padding:4px 8px 4px 0; vertical-align:top">
       <div style="border:1px solid #c6f6d5; border-radius:4px; padding:6px 10px; background:#f0fff4;">
-        <div style="font-size:7px; color:#4a5568;">Total Hadir</div>
+        <div style="font-size:7px; color:#4a5568;">Hadir</div>
         <div style="font-size:16px; font-weight:bold; color:#276749;">{{ $classTotal['hadir'] }}</div>
         <div style="font-size:6.5px; color:#68d391;">pertemuan</div>
       </div>
     </td>
-    <td style="width:25%; padding:4px 4px 4px 0; vertical-align:top">
+    <td style="width:20%; padding:4px 4px 4px 0; vertical-align:top">
+      <div style="border:1px solid #fefcbf; border-radius:4px; padding:6px 10px; background:#fffbeb;">
+        <div style="font-size:7px; color:#4a5568;">Telat</div>
+        <div style="font-size:16px; font-weight:bold; color:#d69e2e;">{{ $classTotal['telat'] }}</div>
+        <div style="font-size:6.5px; color:#f6e05e;">pertemuan</div>
+      </div>
+    </td>
+    <td style="width:20%; padding:4px 4px 4px 0; vertical-align:top">
       <div style="border:1px solid #feebc8; border-radius:4px; padding:6px 10px; background:#fffaf0;">
-        <div style="font-size:7px; color:#4a5568;">Total Izin</div>
+        <div style="font-size:7px; color:#4a5568;">Izin</div>
         <div style="font-size:16px; font-weight:bold; color:#c05621;">{{ $classTotal['izin'] }}</div>
         <div style="font-size:6.5px; color:#f6ad55;">pertemuan</div>
       </div>
     </td>
-    <td style="width:25%; padding:4px 4px 4px 0; vertical-align:top">
+    <td style="width:20%; padding:4px 4px 4px 0; vertical-align:top">
       <div style="border:1px solid #bee3f8; border-radius:4px; padding:6px 10px; background:#ebf8ff;">
-        <div style="font-size:7px; color:#4a5568;">Total Sakit</div>
+        <div style="font-size:7px; color:#4a5568;">Sakit</div>
         <div style="font-size:16px; font-weight:bold; color:#2b6cb0;">{{ $classTotal['sakit'] }}</div>
         <div style="font-size:6.5px; color:#63b3ed;">pertemuan</div>
       </div>
     </td>
-    <td style="width:25%; padding:4px 0; vertical-align:top">
+    <td style="width:20%; padding:4px 0; vertical-align:top">
       <div style="border:1px solid #fed7d7; border-radius:4px; padding:6px 10px; background:#fff5f5;">
-        <div style="font-size:7px; color:#4a5568;">Total Alpha</div>
+        <div style="font-size:7px; color:#4a5568;">Alpha</div>
         <div style="font-size:16px; font-weight:bold; color:#c53030;">{{ $classTotal['alpha'] }}</div>
         <div style="font-size:6.5px; color:#fc8181;">pertemuan</div>
       </div>

@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\ProfilePhotoController;
 // QR Attendance additions controllers
 use App\Http\Controllers\Api\Admin\ShiftController;
 use App\Http\Controllers\Api\Admin\ClassroomShiftScheduleController;
+use App\Http\Controllers\Api\Admin\AttendancePdfController as AdminAttendancePdfController;
+use App\Http\Controllers\Api\Guru\AttendancePdfController as GuruAttendancePdfController;
 use App\Http\Controllers\Api\QrScanController;
 
 use Illuminate\Support\Facades\Route;
@@ -102,6 +104,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan
         Route::get('reports/attendance', [AdminReportController::class, 'attendance']);
+        Route::get('reports/attendance/pdf/daily', [AdminAttendancePdfController::class, 'daily']);
 
         // ── NEW: Shift Management ──
         Route::apiResource('shifts', ShiftController::class);
@@ -134,6 +137,8 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan
         Route::get('reports/attendance', [GuruReportController::class, 'attendance']);
+        Route::get('reports/attendance/pdf/daily', [GuruAttendancePdfController::class, 'daily']);
+        Route::get('reports/attendance/pdf/range', [GuruAttendancePdfController::class, 'export']);
     });
 
     // ── SISWA ─────────────────────────────────────────────────────────────
