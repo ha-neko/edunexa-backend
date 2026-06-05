@@ -83,6 +83,14 @@
         </a>
     </li>
 
+    <!-- SHIFT / SESI -->
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('admin.shift') }}">
+            <i class="fas fa-clock"></i>
+            <span>Shift</span>
+        </a>
+    </li>
+
     <!-- UPDATE LOG -->
     <li class="nav-item">
         <a class="nav-link" href="{{ route('admin.update-log') }}">

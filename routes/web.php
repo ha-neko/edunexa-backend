@@ -42,6 +42,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/master-guru', fn() => view('admin.Role.guru'))->name('master-guru');
     Route::get('/master-kelas', fn() => view('admin.class'))->name('master-kelas');
     Route::get('/jadwal', fn() => view('admin.jadwal'))->name('jadwal');
+    Route::get('/shift', fn() => view('admin.shift'))->name('shift');
     Route::get('/scanner', fn() => view('admin.scanner'))->name('scanner');
     Route::get('/update-log', fn() => view('admin.update'))->name('update-log');
 });
