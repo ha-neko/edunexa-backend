@@ -260,11 +260,28 @@ class QrScanController extends Controller
         $phone = $student->guardian?->phone_number ?? $student->parent_phone;
 
         if (! $phone) {
+            logger()->info('[Fonnte] No phone number for student', [
+                'student' => $student->nis,
+                'name'    => $student->user->name,
+            ]);
             return;
         }
 
+        // Format ke international (62), hapus 0 di depan, spasi, strip
+        $cleaned = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($cleaned, '0')) {
+            $cleaned = '62' . substr($cleaned, 1);
+        } elseif (!str_starts_with($cleaned, '62')) {
+            $cleaned = '62' . $cleaned;
+        }
+
+        logger()->info('[Fonnte] Attempting send', [
+            'original' => $phone,
+            'formatted' => $cleaned,
+        ]);
+
         $this->fonnte->sendAttendanceNotification(
-            $phone,
+            $cleaned,
             $student->user->name,
             $scanType,
             $time,
