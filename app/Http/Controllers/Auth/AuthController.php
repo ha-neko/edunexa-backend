@@ -60,7 +60,13 @@ class AuthController extends Controller
 
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
-        auth('api')->user()->update([
+        $user = auth('api')->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Password saat ini tidak sesuai.'], 422);
+        }
+
+        $user->update([
             'password' => Hash::make($request->password),
         ]);
 

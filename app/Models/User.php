@@ -22,12 +22,22 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'photo',
+    ];
+
+    protected $appends = [
+        'profile_photo_url',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return $this->photo ? asset('storage/' . $this->photo) : null;
+    }
 
     protected function casts(): array
     {
