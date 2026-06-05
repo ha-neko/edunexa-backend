@@ -37,18 +37,15 @@
                     </div>
 
                     <div class="scanner-action mt-4">
-                        <div class="btn-group w-100 mb-2" role="group">
-                            <button class="scanner-btn scan-type-btn active" data-type="in" id="scanTypeIn">
-                                <i class="fas fa-sign-in-alt mr-2"></i> Scan Masuk
-                            </button>
-                            <button class="scanner-btn scan-type-btn" data-type="out" id="scanTypeOut">
-                                <i class="fas fa-sign-out-alt mr-2"></i> Scan Pulang
-                            </button>
-                        </div>
                         <button class="scanner-btn start-btn" id="startScanner">
                             <i class="fas fa-camera mr-2"></i>
-                            <span>Mulai Scan</span>
+                            <span>Mulai Scan Kamera</span>
                         </button>
+                        <button class="scanner-btn upload-btn" id="uploadQrBtn">
+                            <i class="fas fa-upload mr-2"></i>
+                            Upload Foto QR
+                        </button>
+                        <input type="file" id="qrUploadInput" accept="image/*" style="display:none;">
                         <div id="photoSection" style="display:none;" class="w-100">
                             <button class="scanner-btn btn-info w-100 mb-1" id="capturePhotoBtn">
                                 <i class="fas fa-camera-retro mr-2"></i> Ambil Foto Verifikasi
@@ -168,8 +165,7 @@
 .start-btn { background:linear-gradient(135deg, #2563eb, #1d4ed8); }
 .scanner-btn:hover    { transform:translateY(-2px); }
 .scanner-btn:disabled { opacity:.7; cursor:not-allowed; }
-.scan-type-btn { flex:1; background:#374151; font-size:13px; padding:10px 12px; border-radius:8px !important; }
-.scan-type-btn.active { background:linear-gradient(135deg, #2563eb, #1d4ed8); }
+.upload-btn { background:linear-gradient(135deg, #7c3aed, #6d28d9); }
 .student-avatar { width:120px; height:120px; object-fit:cover; border-radius:50%; border:3px solid #2563eb; }
 </style>
 
@@ -195,22 +191,10 @@ let lastScanTime  = 0;
 
 const startBtn     = document.getElementById('startScanner');
 const cameraStatus = document.getElementById('cameraStatus');
-const scanTypeIn   = document.getElementById('scanTypeIn');
-const scanTypeOut  = document.getElementById('scanTypeOut');
+const uploadQrBtn  = document.getElementById('uploadQrBtn');
+const qrUploadInput = document.getElementById('qrUploadInput');
 
-let scanType = 'in';
 let verifyPhotoBase64 = null;
-
-scanTypeIn.addEventListener('click', () => {
-    scanType = 'in';
-    scanTypeIn.classList.add('active');
-    scanTypeOut.classList.remove('active');
-});
-scanTypeOut.addEventListener('click', () => {
-    scanType = 'out';
-    scanTypeOut.classList.add('active');
-    scanTypeIn.classList.remove('active');
-});
 
 // ── Photo capture ──
 const photoSection    = document.getElementById('photoSection');
@@ -235,6 +219,23 @@ photoInput.addEventListener('change', (e) => {
     reader.readAsDataURL(file);
 });
 
+// ── QR Upload ──
+uploadQrBtn.addEventListener('click', () => qrUploadInput.click());
+
+qrUploadInput.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (! file) return;
+
+    try {
+        const decodedText = await Html5Qrcode.decodeFile(file, false);
+        processQrCode(decodedText);
+    } catch (err) {
+        alert('Tidak dapat membaca QR dari foto. Pastikan foto jelas.');
+    }
+
+    qrUploadInput.value = '';
+});
+
 /* =====================================
    STATUS UI
 ===================================== */
@@ -248,6 +249,70 @@ function setScannerStatus(active) {
         cameraStatus.classList.replace('badge-success', 'badge-danger');
         cameraStatus.innerHTML = 'Kamera Tidak Aktif';
         startBtn.disabled      = false;
+    }
+}
+
+// ── Process QR ──
+async function processQrCode(decodedText) {
+    const now = Date.now();
+    if (now - lastScanTime < 3000) return;
+    lastScanTime = now;
+
+    try {
+        const payload = { qr_token: decodedText };
+
+        if (verifyPhotoBase64) {
+            payload.verify_photo = verifyPhotoBase64;
+        }
+
+        const response = await axios.post(API_URL, payload, axiosConfig);
+
+        console.log("RESPONSE:", response.data);
+
+        const r = response.data;
+
+        document.getElementById('studentName').innerHTML     = r.student?.name ?? 'Tidak diketahui';
+        document.getElementById('studentClass').innerHTML    = r.student?.classroom ?? '-';
+        document.getElementById('studentNis').innerHTML      = r.student?.nis ?? '-';
+        document.getElementById('studentStatus').innerHTML   = r.attendance?.status ?? 'Hadir';
+        document.getElementById('studentJamMasuk').innerHTML = r.attendance?.scan_in ?? '-';
+        document.getElementById('studentJamPulang').innerHTML = r.attendance?.scan_out ?? '-';
+        document.getElementById('studentTanggal').innerHTML  = r.attendance?.attendance_date ?? '-';
+
+        const photoUrl = r.student?.photo ?? '';
+        document.getElementById('studentAvatar').src =
+            photoUrl
+                ? photoUrl
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
+
+        document.getElementById('successBox').style.display = 'flex';
+        document.getElementById('successMessage').innerHTML = r.message ?? 'Absensi berhasil';
+
+        photoSection.style.display = 'block';
+
+        totalScan++;
+        document.getElementById('attendanceCount').innerHTML = `${totalScan} Siswa Hadir`;
+        const tablePhoto = r.student?.photo ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
+        document.getElementById('attendanceTable').innerHTML += `
+            <tr>
+                <td>${totalScan}</td>
+                <td class="d-flex align-items-center">
+                    <img src="${tablePhoto}"
+                        width="45" height="45" class="rounded-circle mr-3" style="object-fit:cover;">
+                    <div>
+                        <strong>${r.student?.name ?? '-'}</strong><br>
+                        <small>${r.student?.nis ?? '-'}</small>
+                    </div>
+                </td>
+                <td>${r.student?.classroom ?? '-'}</td>
+                <td>${r.attendance?.scan_in ?? '-'}</td>
+                <td><span class="badge badge-success px-3 py-2">${r.attendance?.status ?? 'Hadir'}</span></td>
+            </tr>`;
+
+    } catch(apiError) {
+        console.log("ERROR STATUS:", apiError.response?.status);
+        console.log("ERROR MESSAGE:", apiError.response?.data);
+        alert(apiError.response?.data?.message ?? 'Absensi gagal');
     }
 }
 
@@ -267,72 +332,7 @@ startBtn.addEventListener('click', async () => {
             { fps: 10, qrbox: { width: 220, height: 220 } },
 
             async function(decodedText) {
-
-                // Cegah scan berulang dalam 3 detik
-                const now = Date.now();
-                if (now - lastScanTime < 3000) return;
-                lastScanTime = now;
-
-                    try {
-                        const payload = { qr_token: decodedText, scan_type: scanType };
-
-                        if (verifyPhotoBase64) {
-                            payload.verify_photo = verifyPhotoBase64;
-                        }
-
-                        const response = await axios.post(API_URL, payload, axiosConfig);
-
-                    console.log("RESPONSE:", response.data);
-
-                    const r = response.data;
-
-                    // UPDATE UI
-                    document.getElementById('studentName').innerHTML     = r.student?.name ?? 'Tidak diketahui';
-                    document.getElementById('studentClass').innerHTML    = r.student?.classroom ?? '-';
-                    document.getElementById('studentNis').innerHTML      = r.student?.nis ?? '-';
-                    document.getElementById('studentStatus').innerHTML   = r.attendance?.status ?? 'Hadir';
-                    document.getElementById('studentJamMasuk').innerHTML = r.attendance?.scan_in ?? '-';
-                    document.getElementById('studentJamPulang').innerHTML = r.attendance?.scan_out ?? '-';
-                    document.getElementById('studentTanggal').innerHTML  = r.attendance?.attendance_date ?? '-';
-
-                    // Show actual student photo for visual verification
-                    const photoUrl = r.student?.photo ?? '';
-                    document.getElementById('studentAvatar').src =
-                        photoUrl
-                            ? photoUrl
-                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
-
-                    document.getElementById('successBox').style.display = 'flex';
-                    document.getElementById('successMessage').innerHTML = r.message ?? 'Absensi berhasil';
-
-                    // Show photo capture section
-                    photoSection.style.display = 'block';
-
-                    // TABLE
-                    totalScan++;
-                    document.getElementById('attendanceCount').innerHTML = `${totalScan} Siswa Hadir`;
-                    const tablePhoto = r.student?.photo ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
-                    document.getElementById('attendanceTable').innerHTML += `
-                        <tr>
-                            <td>${totalScan}</td>
-                            <td class="d-flex align-items-center">
-                                <img src="${tablePhoto}"
-                                    width="45" height="45" class="rounded-circle mr-3" style="object-fit:cover;">
-                                <div>
-                                    <strong>${r.student?.name ?? '-'}</strong><br>
-                                    <small>${r.student?.nis ?? '-'}</small>
-                                </div>
-                            </td>
-                            <td>${r.student?.classroom ?? '-'}</td>
-                            <td>${r.attendance?.scan_in ?? '-'}</td>
-                            <td><span class="badge badge-success px-3 py-2">${r.attendance?.status ?? 'Hadir'}</span></td>
-                        </tr>`;
-
-                } catch(apiError) {
-                    console.log("ERROR STATUS:", apiError.response?.status);
-                    console.log("ERROR MESSAGE:", apiError.response?.data);
-                    alert(apiError.response?.data?.message ?? 'Absensi gagal');
-                }
+                processQrCode(decodedText);
             }
         );
 

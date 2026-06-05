@@ -24,7 +24,6 @@ class QrScanController extends Controller
     {
         $data = $request->validate([
             'qr_token'     => ['required', 'string'],
-            'scan_type'    => ['required', 'in:in,out'],
             'verify_photo' => ['nullable', 'string'], // base64 image
         ]);
 
@@ -74,22 +73,13 @@ class QrScanController extends Controller
             ->whereDate('attendance_date', $today)
             ->first();
 
-        if (! $attendance) {
-            $attendance = new Attendance([
+        // ── Auto-detect scan type ──
+        if (! $attendance || $attendance->scan_in === null) {
+            // → Check-in
+            $attendance ??= new Attendance([
                 'student_id'      => $student->id,
                 'attendance_date' => $today,
             ]);
-        }
-
-        if ($data['scan_type'] === 'in') {
-            if ($attendance->exists && $attendance->scan_in !== null) {
-                return response()->json([
-                    'success'    => false,
-                    'message'    => 'Siswa sudah scan masuk hari ini.',
-                    'student'    => $this->studentSummary($student),
-                    'attendance' => $attendance,
-                ], 409);
-            }
 
             $isLate = $now->gt($lateLimit);
             $status = $isLate ? 'telat' : 'hadir';
@@ -122,15 +112,7 @@ class QrScanController extends Controller
             ]);
         }
 
-        // ── scan_type === 'out' ──────────────────────────────────────────
-
-        if (! $attendance->exists || $attendance->scan_in === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Siswa belum scan masuk hari ini.',
-                'student' => $this->studentSummary($student),
-            ], 422);
-        }
+        // → Check-out
 
         if ($attendance->scan_out !== null) {
             return response()->json([
