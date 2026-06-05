@@ -257,14 +257,14 @@ class QrScanController extends Controller
 
     private function notifyGuardian(Student $student, string $scanType, string $time, string $status): void
     {
-        $guardian = $student->guardian;
+        $phone = $student->guardian?->phone_number ?? $student->parent_phone;
 
-        if (! $guardian || ! $guardian->phone_number) {
+        if (! $phone) {
             return;
         }
 
         $this->fonnte->sendAttendanceNotification(
-            $guardian->phone_number,
+            $phone,
             $student->user->name,
             $scanType,
             $time,
