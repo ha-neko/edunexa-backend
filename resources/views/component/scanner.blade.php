@@ -16,7 +16,6 @@
                 <small class="text-muted" id="scannerDate"></small>
             </div>
         </div>
-    </div>
 
     <div class="row">
 
