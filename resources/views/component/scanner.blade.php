@@ -37,6 +37,14 @@
                     </div>
 
                     <div class="scanner-action mt-4">
+                        <div class="btn-group w-100 mb-2" role="group">
+                            <button class="scanner-btn scan-type-btn active" data-type="in" id="scanTypeIn">
+                                <i class="fas fa-sign-in-alt mr-2"></i> Scan Masuk
+                            </button>
+                            <button class="scanner-btn scan-type-btn" data-type="out" id="scanTypeOut">
+                                <i class="fas fa-sign-out-alt mr-2"></i> Scan Pulang
+                            </button>
+                        </div>
                         <button class="scanner-btn start-btn" id="startScanner">
                             <i class="fas fa-camera mr-2"></i>
                             <span>Mulai Scan</span>
@@ -145,11 +153,14 @@
 </div>
 
 <style>
-.scanner-action { display:flex; gap:12px; justify-content:center; }
-.scanner-btn { border:none; outline:none; padding:12px 22px; border-radius:14px; font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:center; transition:.25s ease; color:#fff; min-width:130px; }
+.scanner-action { flex-direction:column; gap:12px; justify-content:center; }
+.scanner-btn { border:none; outline:none; padding:12px 22px; border-radius:14px; font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:center; transition:.25s ease; color:#fff; }
 .start-btn { background:linear-gradient(135deg, #2563eb, #1d4ed8); }
 .scanner-btn:hover    { transform:translateY(-2px); }
 .scanner-btn:disabled { opacity:.7; cursor:not-allowed; }
+.scan-type-btn { flex:1; background:#374151; font-size:13px; padding:10px 12px; border-radius:8px !important; }
+.scan-type-btn.active { background:linear-gradient(135deg, #2563eb, #1d4ed8); }
+.student-avatar { width:120px; height:120px; object-fit:cover; border-radius:50%; border:3px solid #2563eb; }
 </style>
 
 <script>
@@ -174,6 +185,21 @@ let lastScanTime  = 0;
 
 const startBtn     = document.getElementById('startScanner');
 const cameraStatus = document.getElementById('cameraStatus');
+const scanTypeIn   = document.getElementById('scanTypeIn');
+const scanTypeOut  = document.getElementById('scanTypeOut');
+
+let scanType = 'in';
+
+scanTypeIn.addEventListener('click', () => {
+    scanType = 'in';
+    scanTypeIn.classList.add('active');
+    scanTypeOut.classList.remove('active');
+});
+scanTypeOut.addEventListener('click', () => {
+    scanType = 'out';
+    scanTypeOut.classList.add('active');
+    scanTypeIn.classList.remove('active');
+});
 
 /* =====================================
    STATUS UI
@@ -208,10 +234,6 @@ startBtn.addEventListener('click', async () => {
 
             async function(decodedText) {
 
-                // DEBUG
-                console.log("QR TERBACA:", decodedText);
-                alert("QR TERBACA: " + decodedText);
-
                 // Cegah scan berulang dalam 3 detik
                 const now = Date.now();
                 if (now - lastScanTime < 3000) return;
@@ -223,7 +245,7 @@ startBtn.addEventListener('click', async () => {
 
                     const response = await axios.post(
                         API_URL,
-                        { qr_token: decodedText },
+                        { qr_token: decodedText, scan_type: scanType },
                         axiosConfig
                     );
 
@@ -240,8 +262,12 @@ startBtn.addEventListener('click', async () => {
                     document.getElementById('studentJamPulang').innerHTML = r.attendance?.scan_out ?? '-';
                     document.getElementById('studentTanggal').innerHTML  = r.attendance?.attendance_date ?? '-';
 
+                    // Show actual student photo for visual verification
+                    const photoUrl = r.student?.photo ?? '';
                     document.getElementById('studentAvatar').src =
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
+                        photoUrl
+                            ? photoUrl
+                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
 
                     document.getElementById('successBox').style.display = 'flex';
                     document.getElementById('successMessage').innerHTML = r.message ?? 'Absensi berhasil';
@@ -249,12 +275,13 @@ startBtn.addEventListener('click', async () => {
                     // TABLE
                     totalScan++;
                     document.getElementById('attendanceCount').innerHTML = `${totalScan} Siswa Hadir`;
+                    const tablePhoto = r.student?.photo ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
                     document.getElementById('attendanceTable').innerHTML += `
                         <tr>
                             <td>${totalScan}</td>
                             <td class="d-flex align-items-center">
-                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff"
-                                    width="45" class="rounded-circle mr-3">
+                                <img src="${tablePhoto}"
+                                    width="45" height="45" class="rounded-circle mr-3" style="object-fit:cover;">
                                 <div>
                                     <strong>${r.student?.name ?? '-'}</strong><br>
                                     <small>${r.student?.nis ?? '-'}</small>
