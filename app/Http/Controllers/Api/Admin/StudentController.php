@@ -71,6 +71,7 @@ class StudentController extends Controller
                 'nis'          => $data['nis'],
                 'classroom_id' => $data['classroom_id'],
                 'guardian_id'  => $data['guardian_id'] ?? null,
+                'parent_phone' => $data['parent_phone'] ?? null,
             ]);
 
             if (!empty($data['parent_phone']) && $student->guardian) {
@@ -113,9 +114,9 @@ class StudentController extends Controller
                 $student->user->update($userFields);
             }
 
-            $student->update(array_intersect_key($data, array_flip(['nis', 'classroom_id', 'guardian_id'])));
+            $student->update(array_intersect_key($data, array_flip(['nis', 'classroom_id', 'guardian_id', 'parent_phone'])));
 
-            if (array_key_exists('parent_phone', $data) && $student->guardian) {
+            if (!empty($data['parent_phone']) && $student->guardian) {
                 $student->guardian->update(['phone_number' => $data['parent_phone']]);
             }
         });

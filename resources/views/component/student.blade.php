@@ -573,7 +573,7 @@ function renderStudents(students) {
         const majorName     = student.classroom?.major?.major_name ?? '-';
         const classroomName = `${student.classroom?.grade ?? ''} ${student.classroom?.group_number ?? ''}`.trim();
         const guardianName  = student.guardian?.user?.name ?? '-';
-        const parentPhone   = student.guardian?.phone_number ?? '';
+        const parentPhone   = student.parent_phone || student.guardian?.phone_number || '';
         const status        = student.deleted_at ? 'inactive' : 'active';
 
         if (status === 'active') active++; else inactive++;
