@@ -45,9 +45,9 @@
 
         <div class="header-actions">
 
-            <button class="btn-excel" id="downloadExcel">
-                <i class="fas fa-file-excel"></i>
-                Download Excel
+           <button class="btn-excel" id="btnLaporan" data-toggle="modal" data-target="#reportModal">
+                <i class="fas fa-file-pdf"></i>
+                Laporan PDF
             </button>
 
             <button class="btn-add-student" data-toggle="modal" data-target="#createStudentModal">
@@ -361,6 +361,95 @@
 
                 </div>
 
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- MODAL REPORT PDF -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-pdf mr-2" style="color:#ef4444;"></i>
+                    Laporan Absensi Siswa
+                </h5>
+                <button type="button" class="close text-light" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="mb-3">
+                    <label>Kelas <small class="text-muted">(Opsional)</small></label>
+                    <select class="form-control" id="reportClassroom">
+                        <option value="">-- Semua Kelas --</option>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Tanggal Dari</label>
+                        <input type="date" class="form-control" id="reportDateFrom">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Tanggal Sampai</label>
+                        <input type="date" class="form-control" id="reportDateTo">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label>Status <small class="text-muted">(Opsional)</small></label>
+                    <select class="form-control" id="reportStatus">
+                        <option value="">-- Semua Status --</option>
+                        <option value="hadir">Hadir</option>
+                        <option value="izin">Izin</option>
+                        <option value="sakit">Sakit</option>
+                        <option value="alpha">Alpha</option>
+                    </select>
+                </div>
+
+                <!-- SUMMARY PREVIEW -->
+                <div id="reportSummary" style="display:none; background:#1e293b; border-radius:8px; padding:1rem; margin-top:1rem;">
+                    <p style="color:#94a3b8; font-size:12px; margin:0 0 10px;">
+                        <i class="fas fa-chart-bar mr-1"></i> Summary Periode
+                    </p>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <span class="badge badge-success px-2 py-1" style="color:#fff !important;">
+                            Hadir: <strong id="sumHadir">0</strong>
+                        </span>
+                        <span class="badge badge-info px-2 py-1" style="color:#fff !important;">
+                            Izin: <strong id="sumIzin">0</strong>
+                        </span>
+                        <span class="badge badge-warning px-2 py-1" style="color:#fff !important;">
+                            Sakit: <strong id="sumSakit">0</strong>
+                        </span>
+                        <span class="badge badge-danger px-2 py-1" style="color:#fff !important;">
+                            Alpha: <strong id="sumAlpha">0</strong>
+                        </span>
+                        <span class="badge badge-primary px-2 py-1" style="color:#fff !important;">
+                            Total: <strong id="sumTotal">0</strong>
+                        </span>
+                    </div>
+                    <p style="color:#64748b; font-size:11px; margin:8px 0 0;">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <span id="reportPeriodInfo"></span>
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-light" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" id="previewReportBtn">
+                    <i class="fas fa-eye mr-2"></i>Preview
+                </button>
+                <button type="button" class="btn btn-danger" id="downloadPdfBtn">
+                    <i class="fas fa-file-pdf mr-2"></i>Download PDF
+                </button>
             </div>
 
         </div>
@@ -911,32 +1000,283 @@ async function regenerateQr(id) {
     }
 }
 /* ══════════════════════════════════════════
-   DOWNLOAD EXCEL
+   REPORT PDF
 ══════════════════════════════════════════ */
 
-document.getElementById('downloadExcel').addEventListener('click', () => {
-    const rows = [['No','Nama','Email','NIS','Jurusan','Kelas','Wali Murid','Status']];
-    allStudents.forEach((s, i) => {
-        rows.push([
-            i + 1,
-            s.user?.name  ?? '-',
-            s.user?.email ?? '-',
-            s.nis         ?? '-',
-            s.classroom?.major?.major_name ?? '-',
-            `${s.classroom?.grade ?? ''} ${s.classroom?.group_number ?? ''}`.trim() || '-',
-            s.guardian?.user?.name ?? '-',
-            s.deleted_at ? 'Non Active' : 'Active'
-        ]);
-    });
+const REPORT_URL = `${BASE_URL}/reports/attendance`;
 
-    const csv  = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'data-siswa.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+// Set default tanggal (awal bulan - hari ini)
+function setDefaultDates() {
+    const today    = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const fmt      = d => d.toISOString().split('T')[0];
+    document.getElementById('reportDateFrom').value = fmt(firstDay);
+    document.getElementById('reportDateTo').value   = fmt(today);
+}
+
+// Load kelas ke dropdown report
+async function loadReportClassrooms() {
+    try {
+        const res    = await axios.get(`${CLASSROOM_URL}?per_page=100`, axiosConfig);
+        const select = document.getElementById('reportClassroom');
+        select.innerHTML = '<option value="">-- Semua Kelas --</option>';
+        res.data.data.forEach(item => {
+            const majorName = item.major?.major_name ?? '';
+            const label     = majorName
+                ? `${majorName} · ${item.grade} ${item.group_number}`
+                : `${item.grade} ${item.group_number}`;
+            select.innerHTML += `<option value="${item.id}">${label}</option>`;
+        });
+    } catch(e) {
+        console.error('Gagal memuat kelas report:', e);
+    }
+}
+
+// Fetch data report dari API
+async function fetchReport() {
+    const params      = new URLSearchParams();
+    const classroomId = document.getElementById('reportClassroom').value;
+    const dateFrom    = document.getElementById('reportDateFrom').value;
+    const dateTo      = document.getElementById('reportDateTo').value;
+    const status      = document.getElementById('reportStatus').value;
+
+    if (classroomId) params.append('classroom_id', classroomId);
+    if (dateFrom)    params.append('date_from', dateFrom);
+    if (dateTo)      params.append('date_to', dateTo);
+    if (status)      params.append('status', status);
+    params.append('per_page', 200);
+
+    const res = await axios.get(`${REPORT_URL}?${params.toString()}`, axiosConfig);
+    return res.data;
+}
+
+// Preview summary
+document.getElementById('previewReportBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('previewReportBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
+
+    try {
+        const res     = await fetchReport();
+        const summary = res.summary;
+        const period  = res.period;
+
+        document.getElementById('sumHadir').innerText = summary.hadir ?? 0;
+        document.getElementById('sumIzin').innerText  = summary.izin  ?? 0;
+        document.getElementById('sumSakit').innerText = summary.sakit ?? 0;
+        document.getElementById('sumAlpha').innerText = summary.alpha ?? 0;
+        document.getElementById('sumTotal').innerText = summary.total ?? 0;
+        document.getElementById('reportPeriodInfo').innerText =
+            `Periode: ${period.from} s/d ${period.to}`;
+
+        document.getElementById('reportSummary').style.display = 'block';
+
+    } catch(e) {
+        alert(e.response?.data?.message ?? 'Gagal memuat data report.');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-eye mr-2"></i>Preview';
+    }
+});
+
+// Download PDF
+document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('downloadPdfBtn');
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+
+    try {
+        const res          = await fetchReport();
+        const attendances  = res.data.data ?? [];
+        const summary      = res.summary;
+        const period       = res.period;
+        const classLabel   = document.getElementById('reportClassroom').selectedOptions[0]?.text ?? 'Semua Kelas';
+        const statusLabel  = document.getElementById('reportStatus').value || 'Semua Status';
+        const printDate    = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+
+        const win = window.open('', '_blank');
+        win.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Laporan Absensi - EDUNEXA</title>
+                <style>
+                    * { margin:0; padding:0; box-sizing:border-box; }
+                    body { font-family: Arial, sans-serif; font-size:12px; color:#1e293b; padding:30px; }
+
+                    .header { text-align:center; border-bottom:2.5px solid #1e3a5f; padding-bottom:12px; margin-bottom:16px; }
+                    .header h1 { font-size:16px; font-weight:bold; text-transform:uppercase; color:#1e3a5f; letter-spacing:1px; }
+                    .header h2 { font-size:13px; font-weight:bold; color:#2563eb; margin-top:4px; }
+                    .header p  { font-size:11px; color:#64748b; margin-top:2px; }
+
+                    .info-grid { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+                    .info-item { flex:1; min-width:140px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 12px; }
+                    .info-item label { font-size:10px; color:#64748b; display:block; margin-bottom:2px; }
+                    .info-item span  { font-size:12px; font-weight:bold; color:#1e293b; }
+
+                    .summary { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+                    .sum-card { flex:1; min-width:80px; text-align:center; padding:10px 8px; border-radius:8px; }
+                    .sum-card h3 { font-size:20px; font-weight:bold; margin-bottom:2px; }
+                    .sum-card p  { font-size:10px; }
+                    .s-hadir { background:#f0fff4; color:#276749; }
+                    .s-izin  { background:#fffaf0; color:#c05621; }
+                    .s-sakit { background:#ebf8ff; color:#2b6cb0; }
+                    .s-alpha { background:#fff5f5; color:#c53030; }
+                    .s-total { background:#f3e8ff; color:#6b21a8; }
+
+                    table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:16px; }
+                    thead tr { background:#1e3a5f; color:#fff; }
+                    thead th { padding:8px 10px; text-align:left; font-size:10.5px; }
+                    tbody tr:nth-child(even) { background:#f8fafc; }
+                    tbody td { padding:7px 10px; border-bottom:1px solid #e2e8f0; }
+
+                    .badge { padding:3px 8px; border-radius:20px; font-size:10px; font-weight:bold; }
+                    .b-hadir { background:#dcfce7; color:#166534; }
+                    .b-izin  { background:#dbeafe; color:#1e40af; }
+                    .b-sakit { background:#fef9c3; color:#854d0e; }
+                    .b-alpha { background:#fee2e2; color:#991b1b; }
+                    .b-default { background:#f1f5f9; color:#475569; }
+
+                    .empty { text-align:center; padding:30px; color:#94a3b8; }
+
+                    .footer { margin-top:20px; display:flex; justify-content:space-between; align-items:flex-end; }
+                    .ttd { text-align:center; }
+                    .ttd p { margin-bottom:50px; font-size:11px; }
+                    .ttd-line { border-top:1px solid #1a1a1a; width:160px; margin:0 auto; }
+                    .ttd-name { font-weight:bold; font-size:11px; margin-top:3px; }
+
+                    .generated { font-size:9px; color:#a0aec0; text-align:right; margin-top:12px; }
+
+                    @media print {
+                        body { padding: 15px; }
+                    }
+                </style>
+            </head>
+            <body>
+
+                <div class="header">
+                    <h1>SMK Computer Science</h1>
+                    <h2>Laporan Absensi Siswa</h2>
+                    <p>Periode: ${period.from} s/d ${period.to}</p>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Kelas</label>
+                        <span>${classLabel}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Status Filter</label>
+                        <span>${statusLabel}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Total Data</label>
+                        <span>${attendances.length} record</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Dicetak</label>
+                        <span>${printDate}</span>
+                    </div>
+                </div>
+
+                <div class="summary">
+                    <div class="sum-card s-hadir">
+                        <h3>${summary.hadir}</h3><p>Hadir</p>
+                    </div>
+                    <div class="sum-card s-izin">
+                        <h3>${summary.izin}</h3><p>Izin</p>
+                    </div>
+                    <div class="sum-card s-sakit">
+                        <h3>${summary.sakit}</h3><p>Sakit</p>
+                    </div>
+                    <div class="sum-card s-alpha">
+                        <h3>${summary.alpha}</h3><p>Alpha</p>
+                    </div>
+                    <div class="sum-card s-total">
+                        <h3>${summary.total}</h3><p>Total</p>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:30px">No</th>
+                            <th>Nama Siswa</th>
+                            <th style="width:80px">NIS</th>
+                            <th>Kelas</th>
+                            <th>Jurusan</th>
+                            <th style="width:80px">Tanggal</th>
+                            <th style="width:70px">Jam Masuk</th>
+                            <th style="width:70px">Jam Pulang</th>
+                            <th style="width:60px">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${attendances.length === 0
+                            ? `<tr><td colspan="9" class="empty">
+                                <p>Tidak ada data absensi pada periode ini.</p>
+                               </td></tr>`
+                            : attendances.map((a, i) => `
+                                <tr>
+                                    <td style="text-align:center">${i + 1}</td>
+                                    <td>${a.student?.user?.name ?? '-'}</td>
+                                    <td style="font-family:monospace; font-size:10px;">${a.student?.nis ?? '-'}</td>
+                                    <td>${a.student?.classroom?.grade ?? ''} ${a.student?.classroom?.group_number ?? ''}</td>
+                                    <td>${a.student?.classroom?.major?.major_name ?? '-'}</td>
+                                    <td>${a.attendance_date ?? '-'}</td>
+                                    <td>${a.check_in ?? '-'}</td>
+                                    <td>${a.check_out ?? '-'}</td>
+                                    <td>
+                                        <span class="badge b-${a.status ?? 'default'}">
+                                            ${a.status ?? '-'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')
+                        }
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <div style="font-size:10px; color:#64748b;">
+                        <b>Keterangan:</b><br>
+                        H = Hadir &nbsp;|&nbsp; I = Izin &nbsp;|&nbsp; S = Sakit &nbsp;|&nbsp; A = Alpha
+                    </div>
+                    <div class="ttd">
+                        <p>Mengetahui, Wali Kelas</p>
+                        <div class="ttd-line"></div>
+                        <div class="ttd-name">______________________</div>
+                        <div style="font-size:10px; color:#64748b;">NIP. -</div>
+                    </div>
+                </div>
+
+                <div class="generated">
+                    Dicetak oleh sistem EDUNEXA &bull; ${new Date().toLocaleString('id-ID')} WIB
+                </div>
+
+                <script>
+                    window.onload = function() { window.print(); }
+                <\/script>
+
+            </body>
+            </html>
+        `);
+        win.document.close();
+
+    } catch(e) {
+        console.error(e);
+        alert(e.response?.data?.message ?? 'Gagal generate PDF.');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-file-pdf mr-2"></i>Download PDF';
+    }
+});
+
+// Init modal report
+$('#reportModal').on('show.bs.modal', function() {
+    setDefaultDates();
+    loadReportClassrooms();
+    document.getElementById('reportSummary').style.display = 'none';
 });
 
 /* ══════════════════════════════════════════

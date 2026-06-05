@@ -11,8 +11,6 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    // ── POST /api/auth/login ──────────────────────────────────────────────
-
     public function login(LoginRequest $request): JsonResponse
     {
         $token = auth('api')->attempt($request->only('email', 'password'));
@@ -31,21 +29,17 @@ class AuthController extends Controller
         return $this->respondWithToken($token);
     }
 
-    // ── GET /api/auth/me ──────────────────────────────────────────────────
+    public function me(): JsonResponse
+    {
+        $user     = auth('api')->user();
+        $relation = $this->profileRelation();
 
-   public function me(): JsonResponse
-{
-    $user     = auth('api')->user();
-    $relation = $this->profileRelation();
+        if ($relation) {
+            $user->load($relation);
+        }
 
-    if ($relation) {
-        $user->load($relation);
+        return response()->json(['data' => new UserResource($user)]);
     }
-
-    return response()->json(['data' => new UserResource($user)]);
-}
-
-    // ── POST /api/auth/refresh ────────────────────────────────────────────
 
     public function refresh(): JsonResponse
     {
@@ -57,16 +51,12 @@ class AuthController extends Controller
         }
     }
 
-    // ── POST /api/auth/logout ─────────────────────────────────────────────
-
     public function logout(): JsonResponse
     {
         auth('api')->logout();
 
         return response()->json(['message' => 'Berhasil logout.']);
     }
-
-    // ── PUT /api/auth/change-password ─────────────────────────────────────
 
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
@@ -79,24 +69,22 @@ class AuthController extends Controller
         return response()->json(['message' => 'Password berhasil diubah. Silakan login kembali.']);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    private function respondWithToken(string $token): JsonResponse
+    {
+        $user     = auth('api')->user();
+        $relation = $this->profileRelation();
 
-   private function respondWithToken(string $token): JsonResponse
-{
-    $user     = auth('api')->user();
-    $relation = $this->profileRelation();
+        if ($relation) {
+            $user->load($relation);
+        }
 
-    if ($relation) {
-        $user->load($relation);
+        return response()->json([
+            'access_token' => $token,
+            'token_type'   => 'bearer',
+            'expires_in'   => auth('api')->factory()->getTTL() * 60,
+            'data'         => new UserResource($user),
+        ]);
     }
-
-    return response()->json([
-        'access_token' => $token,
-        'token_type'   => 'bearer',
-        'expires_in'   => auth('api')->factory()->getTTL() * 60,
-        'data'         => new UserResource($user),
-    ]);
-}
 
     private function profileRelation(): ?string
     {
