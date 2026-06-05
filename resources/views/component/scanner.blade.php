@@ -1,6 +1,7 @@
 <link href="{{ asset('assets/css/custom_scanner.css') }}" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <div class="container-fluid">
 
@@ -226,13 +227,26 @@ qrUploadInput.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (! file) return;
 
-    try {
-        const decodedText = await Html5Qrcode.decodeFile(file, false);
-        processQrCode(decodedText);
-    } catch (err) {
-        alert('Tidak dapat membaca QR dari foto. Pastikan foto jelas.');
-    }
+    const img = new Image();
+    img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width  = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
 
+        if (code) {
+            processQrCode(code.data);
+        } else {
+            alert('Tidak dapat membaca QR dari foto. Pastikan foto jelas.');
+        }
+    };
+    img.onerror = function() {
+        alert('Gagal memuat gambar.');
+    };
+    img.src = URL.createObjectURL(file);
     qrUploadInput.value = '';
 });
 
