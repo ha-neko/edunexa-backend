@@ -105,6 +105,7 @@ Route::middleware('auth:api')->group(function () {
         // Laporan
         Route::get('reports/attendance', [AdminReportController::class, 'attendance']);
         Route::get('reports/attendance/pdf/daily', [AdminAttendancePdfController::class, 'daily']);
+        Route::get('reports/attendance/pdf/daily-range', [AdminAttendancePdfController::class, 'dailyRange']);
 
         // ── NEW: Shift Management ──
         Route::apiResource('shifts', ShiftController::class);
@@ -138,6 +139,7 @@ Route::middleware('auth:api')->group(function () {
         // Laporan
         Route::get('reports/attendance', [GuruReportController::class, 'attendance']);
         Route::get('reports/attendance/pdf/daily', [GuruAttendancePdfController::class, 'daily']);
+        Route::get('reports/attendance/pdf/daily-range', [GuruAttendancePdfController::class, 'dailyRange']);
         Route::get('reports/attendance/pdf/range', [GuruAttendancePdfController::class, 'export']);
     });
 

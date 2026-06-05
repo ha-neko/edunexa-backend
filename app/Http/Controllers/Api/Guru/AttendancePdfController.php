@@ -80,6 +80,98 @@ class AttendancePdfController extends Controller
     }
 
     /**
+     * GET /api/guru/reports/attendance/pdf/daily-range
+     *
+     * Query params:
+     *   classroom_id  (required) — kelas yang diwali oleh guru ini
+     *   date_from     (optional) — default: awal bulan ini
+     *   date_to       (optional) — default: hari ini
+     */
+    public function dailyRange(Request $request): Response
+    {
+        $request->validate([
+            'classroom_id' => ['required', 'ulid', 'exists:classrooms,id'],
+            'date_from'    => ['nullable', 'date'],
+            'date_to'      => ['nullable', 'date', 'after_or_equal:date_from'],
+        ]);
+
+        $teacher      = $this->teacher();
+        $classroomIds = $teacher->classrooms()->pluck('id');
+
+        if (! $classroomIds->contains($request->classroom_id)) {
+            abort(403, 'Anda bukan wali kelas ini.');
+        }
+
+        $classroom = Classroom::with(['major', 'waliKelas.user'])->findOrFail($request->classroom_id);
+
+        $dateFrom = $request->date_from ?? today()->startOfMonth()->toDateString();
+        $dateTo   = $request->date_to   ?? today()->toDateString();
+
+        $students = $classroom->students()->with('user')->orderBy('id')->get();
+
+        $dates = collect();
+        $cur   = Carbon::parse($dateFrom);
+        $end   = Carbon::parse($dateTo);
+        while ($cur->lte($end)) {
+            if ($cur->isWeekday()) {
+                $dates->push($cur->copy());
+            }
+            $cur->addDay();
+        }
+
+        $attendances = Attendance::with(['student.user'])
+            ->whereBetween('attendance_date', [$dateFrom, $dateTo])
+            ->whereHas('student', fn ($q) => $q->where('classroom_id', $classroom->id))
+            ->orderBy('attendance_date')
+            ->orderBy('scan_in')
+            ->get()
+            ->groupBy(fn ($a) => $a->attendance_date->toDateString());
+
+        $days = $dates->map(function ($date) use ($students, $attendances) {
+            $dayAtt = $attendances->get($date->toDateString(), collect());
+
+            $rows = $students->map(function ($student, $idx) use ($dayAtt) {
+                $att = $dayAtt->firstWhere('student_id', $student->id);
+                return [
+                    'no'       => $idx + 1,
+                    'nis'      => $student->nis,
+                    'name'     => $student->user->name,
+                    'scan_in'  => $att ? substr($att->scan_in ?? '', 0, 5) : '-',
+                    'scan_out' => $att ? substr($att->scan_out ?? '', 0, 5) : '-',
+                    'status'   => $att ? $att->status : 'alpha',
+                    'late'     => $att ? (bool) ($att->notes && str_contains($att->notes, 'Terlambat')) : false,
+                ];
+            });
+
+            $summary = [
+                'hadir' => $rows->where('status', 'hadir')->count(),
+                'telat' => $rows->where('status', 'telat')->count(),
+                'izin'  => $rows->where('status', 'izin')->count(),
+                'sakit' => $rows->where('status', 'sakit')->count(),
+                'alpha' => $rows->where('status', 'alpha')->count(),
+            ];
+
+            return compact('date', 'rows', 'summary');
+        });
+
+        $pdf = Pdf::loadView('pdf.attendance-daily-range', compact(
+            'classroom', 'days', 'dateFrom', 'dateTo'
+        ) + ['generatedAt' => now()]);
+
+        $pdf->setPaper('a4', 'portrait');
+        $pdf->setOption(['dpi' => 110, 'defaultFont' => 'sans-serif', 'isRemoteEnabled' => false]);
+
+        $filename = sprintf(
+            'Absensi_Harian_%s_%s_sd_%s.pdf',
+            str_replace([' ', '/'], '_', $classroom->label),
+            Carbon::parse($dateFrom)->format('d-m-Y'),
+            Carbon::parse($dateTo)->format('d-m-Y')
+        );
+
+        return $pdf->download($filename);
+    }
+
+    /**
      * GET /api/guru/reports/attendance/pdf/range
      *
      * Query params:
