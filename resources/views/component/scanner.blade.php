@@ -190,6 +190,53 @@ let totalScan     = 0;
 let scannerActive = false;
 let lastScanTime  = 0;
 
+// ── Session-persisted attendance list ──
+const sessionData = @json(session('scanner_attendance', ['date' => now()->toDateString(), 'list' => []]));
+const scannedIds  = new Set(); // track students already in table to avoid duplicates
+
+if (sessionData.date === new Date().toISOString().slice(0, 10)) {
+    sessionData.list.forEach(function(item, idx) {
+        totalScan++;
+        scannedIds.add(item.student_id);
+        renderAttendanceRow(item, idx);
+    });
+    document.getElementById('attendanceCount').innerHTML = `${totalScan} Siswa Hadir`;
+}
+
+function renderAttendanceRow(item, idx) {
+    const no       = idx + 1;
+    const photoUrl = item.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || 'Siswa')}&background=2563eb&color=fff`;
+    const scanOut  = item.scan_out ? `<br><small class="text-muted">Pulang ${item.scan_out}</small>` : '';
+    const $tbody   = document.getElementById('attendanceTable');
+
+    // Check if student already has a row — update it instead of append
+    const existing = $tbody.querySelector(`tr[data-student-id="${item.student_id}"]`);
+    if (existing) {
+        existing.querySelector('.att-scan-in').textContent    = item.scan_in || '-';
+        existing.querySelector('.att-scan-out').innerHTML     = item.scan_out ? `Pulang ${item.scan_out}` : '-';
+        existing.querySelector('.att-status').textContent     = item.status || 'Hadir';
+        return;
+    }
+
+    $tbody.innerHTML += `
+        <tr data-student-id="${item.student_id}">
+            <td>${no}</td>
+            <td class="d-flex align-items-center">
+                <img src="${photoUrl}"
+                    width="45" height="45" class="rounded-circle mr-3" style="object-fit:cover;">
+                <div>
+                    <strong>${item.name || '-'}</strong><br>
+                    <small>${item.nis || '-'}</small>
+                </div>
+            </td>
+            <td>${item.classroom || '-'}</td>
+            <td class="att-scan-in">${item.scan_in || '-'}</td>
+            <td><span class="att-status badge badge-success px-3 py-2">${item.status || 'Hadir'}</span>
+                <span class="att-scan-out d-block text-muted" style="font-size:11px;">${item.scan_out ? 'Pulang ' + item.scan_out : ''}</span>
+            </td>
+        </tr>`;
+}
+
 const startBtn     = document.getElementById('startScanner');
 const cameraStatus = document.getElementById('cameraStatus');
 const uploadQrBtn  = document.getElementById('uploadQrBtn');
@@ -306,22 +353,24 @@ async function processQrCode(decodedText) {
 
         totalScan++;
         document.getElementById('attendanceCount').innerHTML = `${totalScan} Siswa Hadir`;
-        const tablePhoto = r.student?.photo ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
-        document.getElementById('attendanceTable').innerHTML += `
-            <tr>
-                <td>${totalScan}</td>
-                <td class="d-flex align-items-center">
-                    <img src="${tablePhoto}"
-                        width="45" height="45" class="rounded-circle mr-3" style="object-fit:cover;">
-                    <div>
-                        <strong>${r.student?.name ?? '-'}</strong><br>
-                        <small>${r.student?.nis ?? '-'}</small>
-                    </div>
-                </td>
-                <td>${r.student?.classroom ?? '-'}</td>
-                <td>${r.attendance?.scan_in ?? '-'}</td>
-                <td><span class="badge badge-success px-3 py-2">${r.attendance?.status ?? 'Hadir'}</span></td>
-            </tr>`;
+
+        const idx = totalScan - 1;
+        renderAttendanceRow({
+            student_id: r.student?.id ?? '',
+            name:       r.student?.name ?? '-',
+            nis:        r.student?.nis ?? '-',
+            classroom:  r.student?.classroom ?? '-',
+            photo:      r.student?.photo ?? '',
+            scan_in:    r.attendance?.scan_in ?? '-',
+            scan_out:   r.attendance?.scan_out ?? null,
+            status:     r.attendance?.status ?? 'Hadir',
+        }, idx);
+
+        // ── Persist to session ──
+        axios.post('/scanner/store-scan', {
+            student:   r.student,
+            attendance: r.attendance,
+        }).catch(() => {});
 
     } catch(apiError) {
         console.log("ERROR STATUS:", apiError.response?.status);
