@@ -1,6 +1,6 @@
 
 const API   = window.location.origin + '/api/admin';
-const token = localStorage.getItem('token');
+const token = window._token || localStorage.getItem('token');
 
 let users = [];
 

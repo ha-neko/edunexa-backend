@@ -156,4 +156,7 @@
     </div>
 </div>
 
+<script>
+    window._token = '{{ session("token") }}';
+</script>
 <script src="{{ asset('assets/js/asset/user.js') }}"></script>
