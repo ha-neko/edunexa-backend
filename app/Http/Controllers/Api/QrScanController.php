@@ -136,15 +136,6 @@ class QrScanController extends Controller
             ], 422);
         }
 
-        $minScanOut = Carbon::parse($today . ' ' . $attendance->scan_in)->addMinutes(30);
-        if ($now->lt($minScanOut)) {
-            return response()->json([
-                'success' => false,
-                'message' => sprintf('Scan keluar terlalu cepat. Minimal %s.', $minScanOut->format('H:i')),
-                'student' => $this->studentSummary($student),
-            ], 422);
-        }
-
         $attendance->update(['scan_out' => $now->format('H:i:s')]);
 
         $this->notifyGuardian($student, 'out', $now->format('H:i'), $attendance->status);
