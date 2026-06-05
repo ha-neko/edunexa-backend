@@ -144,7 +144,7 @@ function renderShifts() {
         return;
     }
     tbody.innerHTML = shifts.map(s => {
-        const classCount = s.schedules_count ?? 0;
+        const classCount = s.classroom_count ?? 0;
         return `<tr>
             <td class="text-white font-weight-bold">${e(s.name)}</td>
             <td>${s.start_time?.substring(0,5)}</td>
@@ -275,7 +275,21 @@ document.getElementById('saveAssignBtn').addEventListener('click', async () => {
     for (const sel of selects) {
         const classroomId = sel.dataset.classroomId;
         const shiftId = sel.value;
-        if (!shiftId) continue;
+
+        if (!shiftId) {
+            // Hapus semua jadwal untuk kelas ini
+            try {
+                const sRes = await axios.get(`${API_BASE}/classrooms/${classroomId}/shift-schedule`, axiosCfg);
+                for (const s of (sRes.data.schedules ?? [])) {
+                    await axios.delete(`${API_BASE}/classrooms/${classroomId}/shift-schedule/${s.id}`, axiosCfg);
+                }
+                success++;
+            } catch (e) {
+                console.error('Gagal hapus jadwal kelas', classroomId, e.response?.data);
+                failed++;
+            }
+            continue;
+        }
 
         const schedules = WEEKDAYS.map(d => ({ day_of_week: d, shift_id: shiftId }));
 
@@ -283,13 +297,14 @@ document.getElementById('saveAssignBtn').addEventListener('click', async () => {
             await axios.post(`${API_BASE}/classrooms/${classroomId}/shift-schedule`, { schedules }, axiosCfg);
             success++;
         } catch (e) {
+            console.error('Gagal simpan kelas', classroomId, e.response?.data);
             failed++;
         }
     }
 
     btn.disabled = false;
-    status.textContent = `${success} kelas berhasil disimpan${failed ? `, ${failed} gagal` : ''}.`;
-    setTimeout(() => status.textContent = '', 3000);
+    status.textContent = `${success} kelas berhasil disimpan${failed ? `, ${failed} gagal (cek console)` : ''}.`;
+    setTimeout(() => status.textContent = '', 5000);
 });
 
 // ── Init ────────────────────────────────────────────────────────────
