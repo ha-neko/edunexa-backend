@@ -6,14 +6,16 @@
 <div class="container-fluid">
 
     <!-- PAGE TITLE -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="h3 mb-1 text-gray-100 font-weight-bold">Scanner Absensi</h1>
-            <p class="mb-0 text-muted">Scan QR Code siswa untuk melakukan absensi otomatis.</p>
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="h3 mb-1 text-gray-100 font-weight-bold">Scanner Absensi</h1>
+                <p class="mb-0 text-muted">Scan QR Code siswa untuk melakukan absensi otomatis.</p>
+            </div>
+            <div class="text-right">
+                <span id="scannerClock" class="d-block text-light font-weight-bold" style="font-size:18px;">-</span>
+                <small class="text-muted" id="scannerDate"></small>
+            </div>
         </div>
-        <span class="badge badge-primary p-2 shadow-sm" style="color:#fff !important;">
-            Sistem Absensi Digital
-        </span>
     </div>
 
     <div class="row">
@@ -186,41 +188,74 @@ const axiosConfig = {
     }
 };
 
+// ── Axios global CSRF config ──
+axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
+axios.defaults.withCredentials = true;
+
 let scanner       = null;
 let totalScan     = 0;
 let scannerActive = false;
 let lastScanTime  = 0;
 
-// ── Session-persisted attendance list ──
-const sessionData = @json(session('scanner_attendance', ['date' => now()->toDateString(), 'list' => []]));
-const scannedIds  = new Set(); // track students already in table to avoid duplicates
+/* =====================================
+   ATTENDANCE API — load today's list
+===================================== */
+const scannedIds = new Set();
+const API_TODAY  = '{{ rtrim(config("app.url"), "/") }}/api/attendance/today';
 
-if (sessionData.date === new Date().toISOString().slice(0, 10)) {
-    sessionData.list.forEach(function(item, idx) {
-        totalScan++;
-        scannedIds.add(item.student_id);
-        renderAttendanceRow(item, idx);
-    });
-    document.getElementById('attendanceCount').innerHTML = `${totalScan} Siswa Hadir`;
+(async function loadToday() {
+    try {
+        const res = await axios.get(API_TODAY, axiosConfig);
+        const list = res.data?.data ?? [];
+        totalScan = 0;
+        list.forEach(function(item, idx) {
+            totalScan++;
+            if (item.student_id) scannedIds.add(item.student_id);
+            renderAttendanceRow(item, idx);
+        });
+        document.getElementById('attendanceCount').innerHTML = `${totalScan} Siswa Hadir`;
+        console.log('[Scanner] loaded', totalScan, 'attendances from API');
+    } catch (e) {
+        console.warn('[Scanner] load today failed:', e.response?.status);
+    }
+})();
+
+/* =====================================
+   CLOCK
+===================================== */
+function updateClock() {
+    const now = new Date();
+    const timeOpts = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const el = document.getElementById('scannerClock');
+    const el2 = document.getElementById('scannerDate');
+    if (el) el.textContent = now.toLocaleTimeString('id-ID', timeOpts);
+    if (el2) el2.textContent = now.toLocaleDateString('id-ID', dateOpts);
 }
+setInterval(updateClock, 1000);
+updateClock();
 
+/* =====================================
+   RENDER ATTENDANCE ROW
+===================================== */
 function renderAttendanceRow(item, idx) {
     const no       = idx + 1;
     const photoUrl = item.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || 'Siswa')}&background=2563eb&color=fff`;
-    const scanOut  = item.scan_out ? `<br><small class="text-muted">Pulang ${item.scan_out}</small>` : '';
     const $tbody   = document.getElementById('attendanceTable');
 
     // Check if student already has a row — update it instead of append
-    const existing = $tbody.querySelector(`tr[data-student-id="${item.student_id}"]`);
+    const existing = $tbody.querySelector(`tr[data-student-id="${CSS.escape(item.student_id || '')}"]`);
     if (existing) {
         existing.querySelector('.att-scan-in').textContent    = item.scan_in || '-';
-        existing.querySelector('.att-scan-out').innerHTML     = item.scan_out ? `Pulang ${item.scan_out}` : '-';
+        existing.querySelector('.att-scan-out').innerHTML     = item.scan_out ? `Pulang ${item.scan_out}` : '';
         existing.querySelector('.att-status').textContent     = item.status || 'Hadir';
         return;
     }
 
+    const scanOutHtml = item.scan_out ? `<span class="att-scan-out d-block text-muted" style="font-size:11px;">Pulang ${item.scan_out}</span>` : '';
     $tbody.innerHTML += `
-        <tr data-student-id="${item.student_id}">
+        <tr data-student-id="${CSS.escape(item.student_id || '')}">
             <td>${no}</td>
             <td class="d-flex align-items-center">
                 <img src="${photoUrl}"
@@ -232,9 +267,7 @@ function renderAttendanceRow(item, idx) {
             </td>
             <td>${item.classroom || '-'}</td>
             <td class="att-scan-in">${item.scan_in || '-'}</td>
-            <td><span class="att-status badge badge-success px-3 py-2">${item.status || 'Hadir'}</span>
-                <span class="att-scan-out d-block text-muted" style="font-size:11px;">${item.scan_out ? 'Pulang ' + item.scan_out : ''}</span>
-            </td>
+            <td><span class="att-status badge badge-success px-3 py-2">${item.status || 'Hadir'}</span>${scanOutHtml}</td>
         </tr>`;
 }
 
@@ -371,9 +404,9 @@ async function processQrCode(decodedText) {
         axios.post('/scanner/store-scan', {
             student:   r.student,
             attendance: r.attendance,
-        }, {
-            headers: { 'X-CSRF-TOKEN': csrfToken }
-        }).catch(() => {});
+        }).catch(function(e) {
+            console.warn('[Scanner] store-scan failed:', e.response?.status, e.response?.data);
+        });
 
     } catch(apiError) {
         console.log("ERROR STATUS:", apiError.response?.status);

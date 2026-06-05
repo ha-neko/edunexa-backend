@@ -192,6 +192,39 @@ class QrScanController extends Controller
         ]);
     }
 
+    public function todayAttendances(): JsonResponse
+    {
+        $user = auth('api')->user();
+
+        $attendances = Attendance::with(['student.user', 'student.classroom.major'])
+            ->whereDate('attendance_date', today())
+            ->when($user && $user->hasRole('guru'), function ($q) use ($user) {
+                $teacher = $user->teacher;
+                $classroomIds = $teacher?->classrooms()->pluck('id') ?? [];
+                return $q->whereHas('student', fn ($sq) => $sq->whereIn('classroom_id', $classroomIds));
+            })
+            ->orderBy('scan_in')
+            ->get()
+            ->map(fn ($att) => [
+                'student_id' => $att->student_id,
+                'name'       => $att->student?->user?->name ?? '-',
+                'nis'        => $att->student?->nis ?? '-',
+                'classroom'  => $att->student?->classroom
+                    ? sprintf('%s %s - %s', $att->student->classroom->grade, $att->student->classroom->group_number, $att->student->classroom->major->major_name)
+                    : '-',
+                'photo'      => $att->student?->user?->profile_photo_url ?? '',
+                'scan_in'    => $att->scan_in ?? '-',
+                'scan_out'   => $att->scan_out ?? null,
+                'status'     => $att->status ?? 'hadir',
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $attendances,
+            'total'   => $attendances->count(),
+        ]);
+    }
+
     public function regenerateQr(string $studentId): JsonResponse
     {
         $student = Student::findOrFail($studentId);

@@ -72,6 +72,9 @@ Route::middleware('auth:api')->group(function () {
     // ── Shared — semua role ───────────────────────────────────────────────
     Route::post('user/profile-photo', [ProfilePhotoController::class, 'update']);
 
+    // ── Scanner — today's attendance list for scanner page ───────────────
+    Route::get('attendance/today', [QrScanController::class, 'todayAttendances']);
+
     // ── ADMIN ─────────────────────────────────────────────────────────────
     Route::middleware('role:admin')->prefix('admin')->group(function () {
 
