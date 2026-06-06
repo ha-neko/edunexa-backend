@@ -1,5 +1,4 @@
 <link href="{{ asset('assets/css/custom_scanner.css') }}" rel="stylesheet">
-<script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
 
@@ -188,7 +187,6 @@ const axiosConfig = {
     }
 };
 
-let scanner       = null;
 let totalScan     = 0;
 let scannerActive = false;
 let lastScanTime  = 0;
@@ -375,6 +373,16 @@ async function processQrCode(decodedText) {
                 ? photoUrl
                 : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.student?.name ?? 'Siswa')}&background=2563eb&color=fff`;
 
+        const scanInTime = r.attendance?.scan_in;
+        const shiftStart = r.shift?.start;
+        if (r.attendance?.scan_in && r.shift?.start) {
+            if (scanInTime < shiftStart) {
+                setTimeout(() => {
+                    alert('⚠️ Kamu sudah tercatat hadir, tapi masih terlalu pagi dari jam masuk (' + shiftStart + ').');
+                }, 500);
+            }
+        }
+
         document.getElementById('successBox').style.display = 'flex';
         document.getElementById('successMessage').innerHTML = r.message ?? 'Absensi berhasil';
 
@@ -411,28 +419,73 @@ async function processQrCode(decodedText) {
 }
 
 /* =====================================
-   START SCANNER
+   CONTINUOUS LOW-RES SCANNER
 ===================================== */
+let cameraStream = null;
+let scanInterval = null;
+let scanCanvas   = null;
+let scanCtx      = null;
+
+function stopCamera() {
+    if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+    }
+    const rd = document.getElementById('reader');
+    if (rd) rd.innerHTML = '';
+    setScannerStatus(false);
+}
+
+function decodeFrame(video) {
+    if (!video || video.readyState < 2) return null;
+    scanCanvas.width  = video.videoWidth;
+    scanCanvas.height = video.videoHeight;
+    scanCtx.drawImage(video, 0, 0);
+
+    return jsQR(
+        scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height).data,
+        scanCanvas.width,
+        scanCanvas.height
+    );
+}
+
 startBtn.addEventListener('click', async () => {
-
     if (scannerActive) return;
-
-    scanner = new Html5Qrcode("reader");
+    stopCamera();
 
     try {
-
-        await scanner.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 220, height: 220 } },
-
-            async function(decodedText) {
-                processQrCode(decodedText);
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment",
+                width: { ideal: 320 },
+                height: { ideal: 240 }
             }
-        );
+        });
+
+        const rd = document.getElementById('reader');
+        rd.innerHTML = '';
+
+        const video = document.createElement('video');
+        video.srcObject = cameraStream;
+        video.setAttribute('playsinline', '');
+        video.setAttribute('autoplay', '');
+        rd.appendChild(video);
+        await video.play();
+
+        scanCanvas = document.createElement('canvas');
+        scanCtx    = scanCanvas.getContext('2d');
+
+        scanInterval = setInterval(() => {
+            const code = decodeFrame(video);
+            if (code) {
+                processQrCode(code.data);
+            }
+        }, 80);
 
         setScannerStatus(true);
 
-    } catch(err) {
+    } catch (err) {
         console.error(err);
         alert('Kamera gagal dibuka');
     }

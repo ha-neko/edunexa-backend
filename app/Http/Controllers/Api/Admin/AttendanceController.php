@@ -24,6 +24,39 @@ class AttendanceController extends Controller
         return response()->json($attendances);
     }
 
+    // ── POST /api/admin/attendances — Absensi Manual ──────────────────────
+
+    public function store(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'student_id'       => ['required', 'ulid', 'exists:students,id'],
+            'attendance_date'  => ['required', 'date', 'before_or_equal:today'],
+            'status'           => ['required', 'in:hadir,izin,sakit,alpha'],
+            'scan_in'          => ['nullable', 'date_format:H:i:s'],
+            'scan_out'         => ['nullable', 'date_format:H:i:s'],
+            'notes'            => ['nullable', 'string'],
+        ]);
+
+        $attendance = Attendance::updateOrCreate(
+            [
+                'student_id'      => $data['student_id'],
+                'attendance_date' => $data['attendance_date'],
+            ],
+            [
+                'status'     => $data['status'],
+                'scan_in'    => $data['scan_in'] ?? null,
+                'scan_out'   => $data['scan_out'] ?? null,
+                'notes'      => $data['notes'] ?? null,
+                'updated_by' => auth('api')->id(),
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Absensi berhasil disimpan.',
+            'data'    => $attendance->fresh(['student.user']),
+        ], 201);
+    }
+
     // ── GET /api/admin/attendances/{attendance} ───────────────────────────
 
     public function show(string $attendance): JsonResponse

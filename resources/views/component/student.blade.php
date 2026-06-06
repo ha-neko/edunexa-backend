@@ -571,7 +571,7 @@
 
 <script>
 
-const BASE_URL      = '{{ rtrim(config("app.url"), "/") }}/api/admin';
+const BASE_URL      = window.location.origin + '/api/admin';
 const STUDENT_URL   = `${BASE_URL}/students`;
 const CLASSROOM_URL = `${BASE_URL}/classrooms`;
 const GUARDIAN_URL  = `${BASE_URL}/guardians`;
@@ -1025,6 +1025,70 @@ document.getElementById('updateStudentBtn').addEventListener('click', async () =
 });
 
 /* ══════════════════════════════════════════
+   ABSENSI MANUAL
+══════════════════════════════════════════ */
+
+const ABSENSI_URL = BASE_URL + '/attendances';
+
+$('#absensiManualModal').on('show.bs.modal', async function () {
+    document.getElementById('absenTanggal').value = new Date().toISOString().split('T')[0];
+    try {
+        const res = await axios.get(STUDENT_URL + '?per_page=500', axiosConfig);
+        const sel = document.getElementById('absenSiswa');
+        sel.innerHTML = '<option value="">-- Pilih Siswa --</option>';
+        res.data.data.forEach(s => {
+            const name = s.user?.name ?? '-';
+            const nis  = s.nis ?? '';
+            sel.innerHTML += `<option value="${s.id}" data-nis="${nis}" data-kelas="${s.classroom?.grade ?? ''} ${s.classroom?.group_number ?? ''}" data-photo="${s.user?.profile_photo_url ?? ''}">${name} (${nis})</option>`;
+        });
+    } catch (e) {
+        console.error('Gagal load siswa:', e);
+    }
+});
+
+document.getElementById('absenSiswa').addEventListener('change', function () {
+    const opt   = this.options[this.selectedIndex];
+    const prev  = document.getElementById('previewSiswa');
+    if (!opt || !opt.value) { prev.style.display = 'none'; return; }
+    document.getElementById('previewAvatar').src = opt.dataset.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(opt.text)}&background=2563eb&color=fff&size=64`;
+    document.getElementById('previewNama').innerText  = opt.text.split(' (')[0];
+    document.getElementById('previewNis').innerText    = 'NIS: ' + (opt.dataset.nis ?? '');
+    document.getElementById('previewKelas').innerText  = opt.dataset.kelas ?? '';
+    prev.style.display = 'block';
+});
+
+document.getElementById('saveAbsensiBtn').addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+
+    try {
+        const payload = {
+            student_id:      document.getElementById('absenSiswa').value,
+            attendance_date: document.getElementById('absenTanggal').value,
+            status:          document.getElementById('absenStatus').value,
+            scan_in:         document.getElementById('absenJamMasuk').value ? document.getElementById('absenJamMasuk').value + ':00' : null,
+            scan_out:        document.getElementById('absenJamPulang').value ? document.getElementById('absenJamPulang').value + ':00' : null,
+            notes:           document.getElementById('absenKeterangan').value.trim() || null,
+        };
+
+        if (!payload.student_id)      { alert('Pilih siswa.'); return; }
+        if (!payload.attendance_date) { alert('Pilih tanggal.'); return; }
+        if (!payload.status)          { alert('Pilih status.'); return; }
+
+        await axios.post(ABSENSI_URL, payload, axiosConfig);
+        alert('Absensi berhasil disimpan.');
+        $('#absensiManualModal').modal('hide');
+        getStudents();
+    } catch (e) {
+        alert(e.response?.data?.message ?? 'Gagal menyimpan absensi.');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-save mr-2"></i>Simpan Absensi';
+    }
+});
+
+/* ══════════════════════════════════════════
    QR CODE
 ══════════════════════════════════════════ */
 
@@ -1298,7 +1362,7 @@ document.getElementById('downloadPdfBtn').addEventListener('click', async () => 
             <body>
 
                 <div class="header">
-                    <h1>SMK Computer Science</h1>
+                    <h1>SMK Cipta Skill</h1>
                     <h2>Laporan Absensi Siswa</h2>
                     <p>Periode: ${period.from} s/d ${period.to}</p>
                 </div>

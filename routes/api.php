@@ -102,8 +102,8 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('guardians', GuardianController::class);
         Route::post('guardians/{guardian}/restore', [GuardianController::class, 'restore']);
 
-        // Absensi (no store — dibuat oleh guru)
-        Route::apiResource('attendances', AdminAttendanceController::class)->except(['store']);
+        // Absensi (manual store by admin)
+        Route::apiResource('attendances', AdminAttendanceController::class);
 
         // Laporan
         Route::get('reports/attendance', [AdminReportController::class, 'attendance']);
