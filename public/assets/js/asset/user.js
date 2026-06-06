@@ -1,6 +1,6 @@
 
-const API   = 'http://10.6.160.79:8081/api/admin';
-const token = localStorage.getItem('token');
+const API   = window.location.origin + '/api/admin';
+const token = window._token || localStorage.getItem('token');
 
 let users = [];
 

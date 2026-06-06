@@ -261,7 +261,7 @@ document.getElementById('otpForm')
         // NANTI GANTI KE API ASLI
         /*
         await axios.post(
-            'http://10.6.160.79/api/verify-otp',
+            window.location.origin + '/api/verify-otp',
             {
                 otp: otp
             }

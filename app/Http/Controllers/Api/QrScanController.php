@@ -9,6 +9,7 @@ use App\Services\FonnteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class QrScanController extends Controller
 {
@@ -22,8 +23,8 @@ class QrScanController extends Controller
     public function scan(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'qr_token'  => ['required', 'string'],
-            'scan_type' => ['required', 'in:in,out'],
+            'qr_token'     => ['required', 'string'],
+            'verify_photo' => ['nullable', 'string'], // base64 image
         ]);
 
         $student = Student::with(['classroom', 'classroom.major', 'user', 'guardian'])
@@ -72,28 +73,21 @@ class QrScanController extends Controller
             ->whereDate('attendance_date', $today)
             ->first();
 
-        if (! $attendance) {
-            $attendance = new Attendance([
+        // ── Auto-detect scan type ──
+        if (! $attendance || $attendance->scan_in === null) {
+            // → Check-in
+            $attendance ??= new Attendance([
                 'student_id'      => $student->id,
                 'attendance_date' => $today,
             ]);
-        }
-
-        if ($data['scan_type'] === 'in') {
-            if ($attendance->exists && $attendance->scan_in !== null) {
-                return response()->json([
-                    'success'    => false,
-                    'message'    => 'Siswa sudah scan masuk hari ini.',
-                    'student'    => $this->studentSummary($student),
-                    'attendance' => $attendance,
-                ], 409);
-            }
 
             $isLate = $now->gt($lateLimit);
-            $status = 'hadir';
+            $status = $isLate ? 'telat' : 'hadir';
             $notes  = $isLate
                 ? sprintf('Terlambat. Scan masuk pukul %s (batas toleransi %s).', $now->format('H:i'), $lateLimit->format('H:i'))
                 : null;
+
+            $photoPath = $this->savePhoto($data['verify_photo'] ?? null, $student->nis);
 
             $attendance->fill([
                 'shift_id'   => $todayShift->id,
@@ -101,6 +95,7 @@ class QrScanController extends Controller
                 'scan_in'    => $now->format('H:i:s'),
                 'updated_by' => null,
                 'notes'      => $notes,
+                'photo'      => $photoPath,
             ])->save();
 
             $this->notifyGuardian($student, 'in', $now->format('H:i'), $status);
@@ -117,13 +112,7 @@ class QrScanController extends Controller
             ]);
         }
 
-        if (! $attendance->exists || $attendance->scan_in === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Siswa belum scan masuk hari ini.',
-                'student' => $this->studentSummary($student),
-            ], 422);
-        }
+        // → Check-out
 
         if ($attendance->scan_out !== null) {
             return response()->json([
@@ -134,18 +123,22 @@ class QrScanController extends Controller
             ], 409);
         }
 
-        $minScanOut = Carbon::parse($today . ' ' . $attendance->scan_in)->addMinutes(30);
-        if ($now->lt($minScanOut)) {
+        // Blokir scan keluar SEBELUM shift berakhir
+        if ($now->lt($shiftEnd)) {
             return response()->json([
                 'success' => false,
-                'message' => sprintf('Scan keluar terlalu cepat. Minimal %s.', $minScanOut->format('H:i')),
-                'student' => $this->studentSummary($student),
+                'message' => sprintf(
+                    'Belum bisa scan keluar. Jam pelajaran masih berlangsung hingga %s.',
+                    $shiftEnd->format('H:i')
+                ),
+                'student'    => $this->studentSummary($student),
+                'attendance' => $attendance,
             ], 422);
         }
 
         $attendance->update(['scan_out' => $now->format('H:i:s')]);
 
-        $this->notifyGuardian($student, 'out', $now->format('H:i'), 'hadir');
+        $this->notifyGuardian($student, 'out', $now->format('H:i'), $attendance->status);
 
         return response()->json([
             'success'    => true,
@@ -190,6 +183,39 @@ class QrScanController extends Controller
         ]);
     }
 
+    public function todayAttendances(): JsonResponse
+    {
+        $user = auth('api')->user();
+
+        $attendances = Attendance::with(['student.user', 'student.classroom.major'])
+            ->whereDate('attendance_date', today())
+            ->when($user && $user->hasRole('guru'), function ($q) use ($user) {
+                $teacher = $user->teacher;
+                $classroomIds = $teacher?->classrooms()->pluck('id') ?? [];
+                return $q->whereHas('student', fn ($sq) => $sq->whereIn('classroom_id', $classroomIds));
+            })
+            ->orderBy('scan_in')
+            ->get()
+            ->map(fn ($att) => [
+                'student_id' => $att->student_id,
+                'name'       => $att->student?->user?->name ?? '-',
+                'nis'        => $att->student?->nis ?? '-',
+                'classroom'  => $att->student?->classroom
+                    ? sprintf('%s %s - %s', $att->student->classroom->grade, $att->student->classroom->group_number, $att->student->classroom->major->major_name)
+                    : '-',
+                'photo'      => $att->student?->user?->profile_photo_url ?? '',
+                'scan_in'    => $att->scan_in ?? '-',
+                'scan_out'   => $att->scan_out ?? null,
+                'status'     => $att->status ?? 'hadir',
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $attendances,
+            'total'   => $attendances->count(),
+        ]);
+    }
+
     public function regenerateQr(string $studentId): JsonResponse
     {
         $student = Student::findOrFail($studentId);
@@ -201,16 +227,52 @@ class QrScanController extends Controller
         ]);
     }
 
+    private function savePhoto(?string $base64, string $nis): ?string
+    {
+        if (! $base64) return null;
+
+        if (str_contains($base64, ',')) {
+            $base64 = explode(',', $base64, 2)[1];
+        }
+
+        $decoded = base64_decode($base64, true);
+        if ($decoded === false) return null;
+
+        $filename = sprintf('%s_%s.png', $nis, Carbon::now()->format('Ymd_His'));
+        $path     = 'attendance-photos/' . $filename;
+
+        Storage::disk('public')->put($path, $decoded);
+
+        return $path;
+    }
+
     private function notifyGuardian(Student $student, string $scanType, string $time, string $status): void
     {
-        $guardian = $student->guardian;
+        $phone = $student->guardian?->phone_number ?? $student->parent_phone;
 
-        if (! $guardian || ! $guardian->phone_number) {
+        if (! $phone) {
+            logger()->info('[Fonnte] No phone number for student', [
+                'student' => $student->nis,
+                'name'    => $student->user->name,
+            ]);
             return;
         }
 
+        // Format ke international (62), hapus 0 di depan, spasi, strip
+        $cleaned = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($cleaned, '0')) {
+            $cleaned = '62' . substr($cleaned, 1);
+        } elseif (!str_starts_with($cleaned, '62')) {
+            $cleaned = '62' . $cleaned;
+        }
+
+        logger()->info('[Fonnte] Attempting send', [
+            'original' => $phone,
+            'formatted' => $cleaned,
+        ]);
+
         $this->fonnte->sendAttendanceNotification(
-            $guardian->phone_number,
+            $cleaned,
             $student->user->name,
             $scanType,
             $time,

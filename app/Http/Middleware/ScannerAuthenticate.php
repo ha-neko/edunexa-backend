@@ -10,6 +10,11 @@ class ScannerAuthenticate
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Allow authenticated web users (admin/guru scanning via browser)
+        if (auth('api')->check()) {
+            return $next($request);
+        }
+
         $secret = config('app.scanner_secret');
 
         if ($secret === null || $secret === '') {

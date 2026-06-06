@@ -167,7 +167,7 @@ document.getElementById('resetPasswordForm')
 
         const response = await axios.post(
 
-            'http://10.6.160.79:8081/api/admin/auth/reset-password',
+            window.location.origin + '/api/admin/auth/reset-password',
 
             {
                 password: password,

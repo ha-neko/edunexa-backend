@@ -50,21 +50,42 @@ class FonnteService
     ): array {
         $emoji    = $scanType === 'in' ? '🏫' : '🏠';
         $label    = $scanType === 'in' ? 'MASUK' : 'KELUAR';
-        $statusText = match ($status) {
-            'hadir'  => 'Hadir',
-            'sakit'  => 'Sakit',
-            'izin'   => 'Izin',
-            'alpha'  => 'Alpha',
-            default => $status,
-        };
 
         $message = "*Absensi Siswa - SMK Computer Science*\n\n";
         $message .= "{$emoji} *Scan {$label}*\n";
         $message .= "Nama: {$studentName}\n";
         $message .= "Waktu: {$time}\n";
-        $message .= "Status: {$statusText}\n\n";
-        $message .= "_Terima kasih._";
 
-        return $this->send($phoneNumber, $message);
+        if ($scanType === 'in') {
+            if ($status === 'telat') {
+                $message .= "Status: *Terlambat* ⏰\n";
+                $message .= "Harap lebih pagi lain kali.\n";
+            } else {
+                $message .= "Status: *Tepat Waktu* ✅\n";
+            }
+        } else {
+            $statusText = match ($status) {
+                'hadir'  => 'Hadir',
+                'telat'  => 'Terlambat',
+                'sakit'  => 'Sakit',
+                'izin'   => 'Izin',
+                default => $status,
+            };
+            $message .= "Status: {$statusText}\n";
+        }
+
+        $message .= "\n_terima kasih._";
+
+        $result = $this->send($phoneNumber, $message);
+
+        if (! $result['status']) {
+            logger()->warning('[Fonnte] Gagal kirim notifikasi', [
+                'phone' => $phoneNumber,
+                'reason' => $result['reason'] ?? 'unknown',
+                'data' => $result['data'] ?? [],
+            ]);
+        }
+
+        return $result;
     }
 }

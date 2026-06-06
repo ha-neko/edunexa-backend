@@ -69,17 +69,22 @@ class ClassroomShiftScheduleController extends Controller
         // Hapus jadwal lama, ganti dengan yang baru (upsert bersih)
         ClassroomShiftSchedule::where('classroom_id', $classroom->id)->delete();
 
-        $created = collect($data['schedules'])->map(fn ($row) =>
+        foreach ($data['schedules'] as $row) {
             ClassroomShiftSchedule::create([
                 'classroom_id' => $classroom->id,
                 'shift_id'     => $row['shift_id'],
                 'day_of_week'  => $row['day_of_week'],
-            ])
-        );
+            ]);
+        }
+
+        $schedules = ClassroomShiftSchedule::with('shift')
+            ->where('classroom_id', $classroom->id)
+            ->orderBy('day_of_week')
+            ->get();
 
         return response()->json([
             'message'   => 'Jadwal shift kelas berhasil disimpan.',
-            'schedules' => $created->load('shift'),
+            'schedules' => $schedules,
         ], 201);
     }
 

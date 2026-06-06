@@ -17,6 +17,7 @@ class Student extends Model
         'nis',
         'classroom_id',
         'guardian_id',
+        'parent_phone',
         'qr_token',
     ];
 

@@ -55,6 +55,7 @@ class StudentController extends Controller
             'nis'          => ['required', 'string', 'max:20', 'unique:students,nis'],
             'classroom_id' => ['required', 'ulid', 'exists:classrooms,id'],
             'guardian_id'  => ['nullable', 'ulid', 'exists:guardians,id'],
+            'parent_phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         $student = DB::transaction(function () use ($data) {
@@ -65,12 +66,19 @@ class StudentController extends Controller
             ]);
             $user->assignRole('siswa');
 
-            return Student::create([
+            $student = Student::create([
                 'user_id'      => $user->id,
                 'nis'          => $data['nis'],
                 'classroom_id' => $data['classroom_id'],
                 'guardian_id'  => $data['guardian_id'] ?? null,
+                'parent_phone' => $data['parent_phone'] ?? null,
             ]);
+
+            if (!empty($data['parent_phone']) && $student->guardian) {
+                $student->guardian->update(['phone_number' => $data['parent_phone']]);
+            }
+
+            return $student;
         });
 
         return response()->json([
@@ -92,6 +100,7 @@ class StudentController extends Controller
             'nis'          => ['sometimes', 'string', 'max:20', "unique:students,nis,{$student->id}"],
             'classroom_id' => ['sometimes', 'ulid', 'exists:classrooms,id'],
             'guardian_id'  => ['sometimes', 'nullable', 'ulid', 'exists:guardians,id'],
+            'parent_phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         DB::transaction(function () use ($student, $data) {
@@ -105,7 +114,11 @@ class StudentController extends Controller
                 $student->user->update($userFields);
             }
 
-            $student->update(array_intersect_key($data, array_flip(['nis', 'classroom_id', 'guardian_id'])));
+            $student->update(array_intersect_key($data, array_flip(['nis', 'classroom_id', 'guardian_id', 'parent_phone'])));
+
+            if (!empty($data['parent_phone']) && $student->guardian) {
+                $student->guardian->update(['phone_number' => $data['parent_phone']]);
+            }
         });
 
         return response()->json([

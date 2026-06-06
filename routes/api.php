@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\ProfilePhotoController;
 // QR Attendance additions controllers
 use App\Http\Controllers\Api\Admin\ShiftController;
 use App\Http\Controllers\Api\Admin\ClassroomShiftScheduleController;
+use App\Http\Controllers\Api\Admin\AttendancePdfController as AdminAttendancePdfController;
+use App\Http\Controllers\Api\Guru\AttendancePdfController as GuruAttendancePdfController;
 use App\Http\Controllers\Api\QrScanController;
 
 use Illuminate\Support\Facades\Route;
@@ -37,7 +39,6 @@ use Illuminate\Support\Facades\Route;
 | Roles    : admin | guru | siswa | guardian
 |
 */
-
 
 // ── SCANNER ENDPOINTS (Authenticated via secret header) ────────────────
 Route::middleware('scanner.auth')->prefix('attendance')->group(function () {
@@ -71,6 +72,9 @@ Route::middleware('auth:api')->group(function () {
     // ── Shared — semua role ───────────────────────────────────────────────
     Route::post('user/profile-photo', [ProfilePhotoController::class, 'update']);
 
+    // ── Scanner — today's attendance list for scanner page ───────────────
+    Route::get('attendance/today', [QrScanController::class, 'todayAttendances']);
+
     // ── ADMIN ─────────────────────────────────────────────────────────────
     Route::middleware('role:admin')->prefix('admin')->group(function () {
 
@@ -102,9 +106,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('attendances', AdminAttendanceController::class)->except(['store']);
 
         // Laporan
-        Route::get('reports/attendance/pdf', [AdminReportController::class, 'attendancePdf']);
         Route::get('reports/attendance', [AdminReportController::class, 'attendance']);
-       
+        Route::get('reports/attendance/pdf/daily', [AdminAttendancePdfController::class, 'daily']);
+        Route::get('reports/attendance/pdf/daily-range', [AdminAttendancePdfController::class, 'dailyRange']);
 
         // ── NEW: Shift Management ──
         Route::apiResource('shifts', ShiftController::class);
@@ -137,6 +141,9 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan
         Route::get('reports/attendance', [GuruReportController::class, 'attendance']);
+        Route::get('reports/attendance/pdf/daily', [GuruAttendancePdfController::class, 'daily']);
+        Route::get('reports/attendance/pdf/daily-range', [GuruAttendancePdfController::class, 'dailyRange']);
+        Route::get('reports/attendance/pdf/range', [GuruAttendancePdfController::class, 'export']);
     });
 
     // ── SISWA ─────────────────────────────────────────────────────────────

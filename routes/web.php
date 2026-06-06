@@ -32,6 +32,59 @@ Route::post('/logout', function(Request $request) {
 })->name('logout');
 
 // =====================
+// SCANNER SESSION — persist today's scan list across page refreshes
+// =====================
+Route::post('/scanner/store-scan', function(Request $request) {
+    $data = $request->validate([
+        'student'   => ['required', 'array'],
+        'attendance' => ['required', 'array'],
+    ]);
+
+    $sessionData = session('scanner_attendance', ['date' => today()->toDateString(), 'list' => []]);
+
+    // Reset if different day
+    if ($sessionData['date'] !== today()->toDateString()) {
+        $sessionData = ['date' => today()->toDateString(), 'list' => []];
+    }
+
+    // Prevent duplicates — replace if student already in list
+    $exists = false;
+    foreach ($sessionData['list'] as $i => $entry) {
+        if ($entry['student_id'] === $data['student']['id']) {
+            $sessionData['list'][$i] = [
+                'student_id'  => $data['student']['id'],
+                'name'        => $data['student']['name'] ?? '-',
+                'nis'         => $data['student']['nis'] ?? '-',
+                'classroom'   => $data['student']['classroom'] ?? '-',
+                'photo'       => $data['student']['photo'] ?? '',
+                'scan_in'     => $data['attendance']['scan_in'] ?? '-',
+                'scan_out'    => $data['attendance']['scan_out'] ?? null,
+                'status'      => $data['attendance']['status'] ?? 'hadir',
+            ];
+            $exists = true;
+            break;
+        }
+    }
+
+    if (! $exists) {
+        $sessionData['list'][] = [
+            'student_id'  => $data['student']['id'],
+            'name'        => $data['student']['name'] ?? '-',
+            'nis'         => $data['student']['nis'] ?? '-',
+            'classroom'   => $data['student']['classroom'] ?? '-',
+            'photo'       => $data['student']['photo'] ?? '',
+            'scan_in'     => $data['attendance']['scan_in'] ?? '-',
+            'scan_out'    => $data['attendance']['scan_out'] ?? null,
+            'status'      => $data['attendance']['status'] ?? 'hadir',
+        ];
+    }
+
+    session(['scanner_attendance' => $sessionData]);
+
+    return response()->json(['success' => true, 'total' => count($sessionData['list'])]);
+});
+
+// =====================
 // ADMIN ROUTES
 // =====================
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -42,6 +95,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/master-guru', fn() => view('admin.Role.guru'))->name('master-guru');
     Route::get('/master-kelas', fn() => view('admin.class'))->name('master-kelas');
     Route::get('/jadwal', fn() => view('admin.jadwal'))->name('jadwal');
+    Route::get('/shift', fn() => view('admin.shift'))->name('shift');
     Route::get('/scanner', fn() => view('admin.scanner'))->name('scanner');
     Route::get('/update-log', fn() => view('admin.update'))->name('update-log');
 });

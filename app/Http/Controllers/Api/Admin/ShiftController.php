@@ -14,9 +14,9 @@ class ShiftController extends Controller
 
     public function index(): JsonResponse
     {
-        $shifts = Shift::withCount('schedules')
-            ->orderBy('start_time')
-            ->get();
+        $shifts = Shift::addSelect(['classroom_count' => ClassroomShiftSchedule::selectRaw('COUNT(DISTINCT classroom_id)')
+            ->whereColumn('shift_id', 'shifts.id')
+        ])->orderBy('start_time')->get();
 
         return response()->json(['data' => $shifts]);
     }

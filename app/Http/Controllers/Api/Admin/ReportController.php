@@ -18,7 +18,7 @@ class ReportController extends Controller
             'classroom_id'  => ['nullable', 'ulid', 'exists:classrooms,id'],
             'date_from'     => ['nullable', 'date'],
             'date_to'       => ['nullable', 'date', 'after_or_equal:date_from'],
-            'status'        => ['nullable', 'in:hadir,izin,sakit,alpha'],
+            'status'        => ['nullable', 'in:hadir,telat,izin,sakit,alpha'],
         ]);
 
         $dateFrom = $request->date_from ?? today()->startOfMonth()->toDateString();
@@ -40,6 +40,7 @@ class ReportController extends Controller
             'data' => $attendances,
             'summary' => [
                 'hadir' => $summary['hadir'] ?? 0,
+                'telat' => $summary['telat'] ?? 0,
                 'izin'  => $summary['izin']  ?? 0,
                 'sakit' => $summary['sakit'] ?? 0,
                 'alpha' => $summary['alpha'] ?? 0,
