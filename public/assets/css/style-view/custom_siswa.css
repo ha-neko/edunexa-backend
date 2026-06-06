@@ -162,3 +162,100 @@
 .modal-footer { border-top: 1px solid rgba(255,255,255,.07); padding: 1rem 1.25rem; }
 .btn-outline-light { border-radius: 10px; font-size: 13px; }
 .btn-primary       { border-radius: 10px; font-size: 13px; }
+/* ── Table Responsive Fix ── */
+.table-card .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ── Fix colspan empty state ── */
+.table-card tbody td[colspan] {
+    padding: 0;
+}
+
+/* ── Textarea di Modal ── */
+.modal-body textarea.form-control {
+    height: auto !important;
+    min-height: 80px;
+    resize: vertical;
+    padding: 10px 12px;
+}
+
+/* ── Table head nowrap ── */
+.table-card thead th {
+    white-space: nowrap;
+}
+
+/* ── Fix kolom aksi tidak terpotong ── */
+.table-card tbody td:last-child {
+    white-space: nowrap;
+}
+
+/* ── No. Orang Tua badge ── */
+.phone-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(79,142,247,.08);
+    border: 1px solid rgba(79,142,247,.15);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: monospace;
+    font-size: 11.5px;
+    color: #7dd3fc;
+}
+
+/* ── Absensi Manual Modal Preview ── */
+#previewSiswa {
+    display: none;
+    background: #1e293b;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#previewSiswa .preview-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ── Select di Modal ── */
+.modal-body select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.modal-body select.form-control option {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+/* ── Time input ── */
+.modal-body input[type="time"].form-control,
+.modal-body input[type="date"].form-control {
+    color-scheme: dark;
+}
+
+/* ── Absensi Manual Button ── */
+.btn-absensi-manual {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .18s, transform .18s;
+    white-space: nowrap;
+}
+.btn-absensi-manual:hover { opacity: .88; transform: translateY(-1px); color: #fff; }

@@ -49,6 +49,13 @@
                 <i class="fas fa-file-pdf"></i>
                 Laporan PDF
             </button>
+                    <button class="btn-add-student"
+                style="background:linear-gradient(135deg,#059669,#047857);"
+                data-toggle="modal"
+                data-target="#absensiManualModal">
+                <i class="fas fa-clipboard-check"></i>
+                Absensi Manual
+            </button>
 
             <button class="btn-add-student" data-toggle="modal" data-target="#createStudentModal">
                 <i class="fas fa-plus"></i>
@@ -120,7 +127,7 @@
                     </thead>
                     <tbody id="studentTable">
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="empty-state">
                                     <i class="fas fa-spinner fa-spin" style="color:#4f8ef7"></i>
                                     <p>Memuat data siswa...</p>
@@ -467,6 +474,100 @@
         </div>
     </div>
 </div>
+<!-- MODAL ABSENSI MANUAL -->
+<div class="modal fade" id="absensiManualModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-clipboard-check mr-2" style="color:#059669"></i>
+                    Absensi Manual
+                </h5>
+                <button type="button" class="close text-light" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="row mb-3">
+
+                    <!-- PILIH SISWA -->
+                    <div class="col-md-6 mb-3">
+                        <label>Siswa <span class="text-danger">*</span></label>
+                        <select class="form-control" id="absenSiswa">
+                            <option value="">-- Pilih Siswa --</option>
+                        </select>
+                    </div>
+
+                    <!-- TANGGAL -->
+                    <div class="col-md-6 mb-3">
+                        <label>Tanggal <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="absenTanggal">
+                    </div>
+
+                    <!-- STATUS -->
+                    <div class="col-md-6 mb-3">
+                        <label>Status <span class="text-danger">*</span></label>
+                        <select class="form-control" id="absenStatus">
+                            <option value="">-- Pilih Status --</option>
+                            <option value="hadir">Hadir</option>
+                            <option value="izin">Izin</option>
+                            <option value="sakit">Sakit</option>
+                            <option value="alpha">Alpha</option>
+                        </select>
+                    </div>
+
+                    <!-- JAM MASUK -->
+                    <div class="col-md-3 mb-3">
+                        <label>Jam Masuk</label>
+                        <input type="time" class="form-control" id="absenJamMasuk">
+                    </div>
+
+                    <!-- JAM PULANG -->
+                    <div class="col-md-3 mb-3">
+                        <label>Jam Pulang</label>
+                        <input type="time" class="form-control" id="absenJamPulang">
+                    </div>
+
+                    <!-- KETERANGAN -->
+                    <div class="col-md-12 mb-3">
+                        <label>Keterangan <small class="text-muted">(Opsional)</small></label>
+                        <textarea class="form-control" id="absenKeterangan"
+                            rows="2" placeholder="Contoh: Izin karena sakit demam..."></textarea>
+                    </div>
+
+                </div>
+
+                <!-- PREVIEW SISWA TERPILIH -->
+                <div id="previewSiswa" style="display:none; background:#1e293b; border-radius:8px; padding:1rem;">
+                    <p style="color:#94a3b8; font-size:12px; margin:0 0 8px;">
+                        <i class="fas fa-user mr-1"></i> Detail Siswa
+                    </p>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <img id="previewAvatar" src="" width="44" height="44"
+                            style="border-radius:50%; object-fit:cover;">
+                        <div>
+                            <p id="previewNama"  style="font-size:14px; font-weight:500; color:#f1f5f9; margin:0;"></p>
+                            <p id="previewKelas" style="font-size:12px; color:#94a3b8; margin:0;"></p>
+                            <p id="previewNis"   style="font-size:12px; color:#64748b; margin:0; font-family:monospace;"></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-light" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success" id="saveAbsensiBtn">
+                    <i class="fas fa-save mr-2"></i>Simpan Absensi
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <script>
 
@@ -626,7 +727,7 @@ async function getStudents() {
     } catch(e) {
         console.error(e);
         studentTable.innerHTML = `
-            <tr><td colspan="8">
+            <tr><td colspan="9">
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle" style="color:#ef4444"></i>
                     <p>Gagal memuat data siswa. Periksa koneksi server.</p>
@@ -641,7 +742,7 @@ function renderStudents(students) {
 
     if (students.length === 0) {
         studentTable.innerHTML = `
-            <tr><td colspan="8">
+            <tr><td colspan="9">
                 <div class="empty-state">
                     <i class="fas fa-users-slash"></i>
                     <p>Tidak ada data yang sesuai.</p>
@@ -688,6 +789,12 @@ function renderStudents(students) {
             <td style="color:#94a3b8; font-size:13px;">${majorName}</td>
             <td style="color:#94a3b8; font-size:13px;">${classroomName || '-'}</td>
             <td style="color:#94a3b8; font-size:13px;">${guardianName}</td>
+            <td style="color:#94a3b8; font-size:13px;">
+                ${parentPhone
+                    ? `<span style="font-family:monospace; font-size:12px;">${parentPhone}</span>`
+                    : '<span style="color:#334155;">-</span>'
+                }
+            </td>
 
             <td>
                 <span class="status-badge ${statusCls}">
